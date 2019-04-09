@@ -11,6 +11,9 @@ jedi = "*"
 importmagic = "*"
 autopep8 = "*"
 flake8 = "*"
+toolz = "*"
+ipython = "*"
+ipdb = "*"
 
 [requires]
 python_version = "3.7"
