@@ -52,6 +52,7 @@ class Symbol:
 K = Keyword
 S = Symbol
 
+# implementation based on https://github.com/tonsky/datascript/blob/aa67e7a4d99b954a357b0c6533bd7039f5d99e54/src/datascript/parser.cljc
 
 def query2map(query: list) -> dict:
     def _loop(parsed: dict, key, qs: list):
