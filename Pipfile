@@ -6,6 +6,11 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
+rope = "*"
+jedi = "*"
+importmagic = "*"
+autopep8 = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.7"
