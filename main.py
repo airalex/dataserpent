@@ -1,3 +1,7 @@
+from pprint import pprint as pp
+import typing as t
+import collections
+
 import toolz.itertoolz as tzi
 import toolz.dicttoolz as tzd
 
@@ -12,6 +16,12 @@ class Keyword:
     def __repr__(self):
         return "Keyword('{}')".format(self._name)
 
+    def __hash__(self):
+        return hash(self._name)
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self._name == other._name
+
 
 class Symbol:
     def __init__(self, name):
@@ -22,6 +32,13 @@ class Symbol:
 
     def __repr__(self):
         return "Symbol('{}')".format(self._name)
+
+    def __hash__(self):
+        return hash(self._name)
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self._name == other._name
+
 
 
 K = Keyword
@@ -46,8 +63,36 @@ def query2map(query: list) -> dict:
     return _loop({}, None, query)
 
 
-def parse_query(query: list):
+Query = collections.namedtuple('Query', ['qfind', 'qwith', 'qin', 'qwhere'])
+
+
+def parse_find(qfind: [S]):
     pass
+
+def parse_with(qwith):
+    pass
+
+def parse_in(qin):
+    pass
+
+def parse_where(qwhere: [[t.Union[S, K]]]):
+    pass
+
+
+def parse_query(query: t.Union[list, dict]):
+    qm = query2map(query)
+
+    qfind = parse_find(qm[K('find')])
+    if K('with') in qm:
+        qwith = parse_with(qm[L('with')])
+    else:
+        qwith = None
+    qin = parse_in(qm.get(K('in'), [S('$')]))
+    qwhere = parse_where(qm.get(K('where'), []))
+
+    res = Query(qfind, qwith, qin, qwhere)
+
+    return res
 
 
 def main():
@@ -57,8 +102,12 @@ def main():
 
     query = [K('find'), S('?e'),
              K('where'), [S('?e'), K('name')]]
-    print(query2map(query))
+    # pp(query2map(query))
+    # => {Keyword('find'): [Symbol('?e')],
+    #     Keyword('where'): [[Symbol('?e'), Keyword('name')]]}
+    parsed_query = parse_query(query)
+    pp(parsed_query)
 
 
-if __name__:
+if __name__ == '__main__':
     main()
