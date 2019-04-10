@@ -82,7 +82,10 @@ def with_source(obj, source):
     return clj.with_meta(obj, {'source': source})
 
 
-class Placeholder(collections.namedtuple('Placeholder', []), clj.MetaMixin):
+# 'unused_placeholder' is a hack used to make the named tuples's objects truthy when comparing with "or" / "and".
+
+
+class Placeholder(collections.namedtuple('Placeholder', ['unused_placeholder']), clj.MetaMixin):
     pass
 
 
@@ -94,11 +97,11 @@ class SrcVar(collections.namedtuple('SrcVar', ['symbol']), clj.MetaMixin):
     pass
 
 
-class DefaultSrc(collections.namedtuple('DefaultSrc', []), clj.MetaMixin):
+class DefaultSrc(collections.namedtuple('DefaultSrc', ['unused_placeholder']), clj.MetaMixin):
     pass
 
 
-class RulesVar(collections.namedtuple('RulesVar', []), clj.MetaMixin):
+class RulesVar(collections.namedtuple('RulesVar', ['unused_placeholder']), clj.MetaMixin):
     pass
 
 
@@ -112,7 +115,7 @@ class PlainSymbol(collections.namedtuple('Constant', ['symbol']), clj.MetaMixin)
 
 def parse_placeholder(form):
     if S('_') == form:
-        return Placeholder()
+        return Placeholder(None)
 
 
 def parse_variable(form):
@@ -127,7 +130,7 @@ def parse_src_var(form):
 
 def parse_rules_var(form):
     if S('%') == form:
-        return RulesVar()
+        return RulesVar(None)
 
 
 def parse_constant(form):
@@ -369,7 +372,7 @@ def take_source(form):
         if source is not None:
             return source, clj.next_(form)
         else:
-            return DefaultSrc(), form
+            return DefaultSrc(None), form
 
 
 def parse_pattern(form):
