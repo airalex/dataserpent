@@ -48,12 +48,6 @@ def into(to, from_):
     return to + from_
 
 
-def with_meta(obj, m):
-    copied = copy.copy(obj)
-    copied.clj_meta = m
-    return copied
-
-
 def is_empty(coll):
     return not coll
 
@@ -78,3 +72,13 @@ def some_fn(*fns):
         return fns[0](args) or fns[1](args)
 
     return _some
+
+
+def with_meta(obj, m):
+    copied = copy.copy(obj)
+    copied.clj_meta = m
+    return copied
+
+
+class MetaMixin:
+    meta = {}

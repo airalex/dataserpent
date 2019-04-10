@@ -49,9 +49,12 @@ def query2map(query: list) -> dict:
     return _loop({}, None, query)
 
 
-Query = collections.namedtuple('Query', ['qfind', 'qwith', 'qin', 'qwhere'])
+class Query(collections.namedtuple('Query', ['qfind', 'qwith', 'qin', 'qwhere']), clj.MetaMixin):
+    pass
 
-FindRel = collections.namedtuple('FindRel', ['elements'])
+
+class FindRel(collections.namedtuple('FindRel', ['elements']), clj.MetaMixin):
+    pass
 
 
 def is_of_size(form, size):
@@ -79,13 +82,32 @@ def with_source(obj, source):
     return clj.with_meta(obj, {'source': source})
 
 
-Placeholder = collections.namedtuple('Placeholder', [])
-Variable = collections.namedtuple('Variable', ['symbol'])
-SrcVar = collections.namedtuple('SrcVar', ['symbol'])
-DefaultSrc = collections.namedtuple('DefaultSrc', [])
-RulesVar = collections.namedtuple('RulesVar', [])
-Constant = collections.namedtuple('Constant', ['value'])
-PlainSymbol = collections.namedtuple('Constant', ['symbol'])
+class Placeholder(collections.namedtuple('Placeholder', []), clj.MetaMixin):
+    pass
+
+
+class Variable(collections.namedtuple('Variable', ['symbol']), clj.MetaMixin):
+    pass
+
+
+class SrcVar(collections.namedtuple('SrcVar', ['symbol']), clj.MetaMixin):
+    pass
+
+
+class DefaultSrc(collections.namedtuple('DefaultSrc', []), clj.MetaMixin):
+    pass
+
+
+class RulesVar(collections.namedtuple('RulesVar', []), clj.MetaMixin):
+    pass
+
+
+class Constant(collections.namedtuple('Constant', ['value']), clj.MetaMixin):
+    pass
+
+
+class PlainSymbol(collections.namedtuple('Constant', ['symbol']), clj.MetaMixin):
+    pass
 
 
 def parse_placeholder(form):
@@ -130,7 +152,8 @@ def parse_fn_arg(form):
         parse_src_var(form)
 
 
-RuleVars = collections.namedtuple('RuleVars', ['required', 'free'])
+class RuleVars(collections.namedtuple('RuleVars', ['required', 'free']), clj.MetaMixin):
+    pass
 
 
 def parse_rule_vars(form):
@@ -157,10 +180,20 @@ def parse_rule_vars(form):
 # bind-rel       = [ [ (binding | '_')+ ] ]
 
 
-BindIgnore = collections.namedtuple('BindIgnore', [])
-BindScalar = collections.namedtuple('BindScalar', [])
-BindTuple = collections.namedtuple('BindTuple', [])
-BindColl = collections.namedtuple('BindColl', [])
+class BindIgnore(collections.namedtuple('BindIgnore', []), clj.MetaMixin):
+    pass
+
+
+class BindScalar(collections.namedtuple('BindScalar', []), clj.MetaMixin):
+    pass
+
+
+class BindTuple(collections.namedtuple('BindTuple', []), clj.MetaMixin):
+    pass
+
+
+class BindColl(collections.namedtuple('BindColl', []), clj.MetaMixin):
+    pass
 
 
 def parse_bind_ignore(form):
@@ -242,9 +275,16 @@ def parse_find_rel(form):
         return FindRel(elements)
 
 
-FindColl = collections.namedtuple('FindColl', ['element'])
-FindScalar = collections.namedtuple('FindScalar', ['element'])
-FindTuple = collections.namedtuple('FindTuple', ['element'])
+class FindColl(collections.namedtuple('FindColl', ['element']), clj.MetaMixin):
+    pass
+
+
+class FindScalar(collections.namedtuple('FindScalar', ['element']), clj.MetaMixin):
+    pass
+
+
+class FindTuple(collections.namedtuple('FindTuple', ['element']), clj.MetaMixin):
+    pass
 
 
 def parse_find_coll(form):
@@ -289,13 +329,32 @@ def parse_in(qin):
     pass
 
 
-Pattern = collections.namedtuple('Pattern', ['source', 'pattern'])
-Predicate = collections.namedtuple('Predicate', ['fn', 'args'])
-Function = collections.namedtuple('Function', ['fn', 'args', 'binding'])
-RuleExpr = collections.namedtuple('RuleExpr', ['source', 'name', 'args'])
-Not = collections.namedtuple('Not', ['source', 'vars_', 'clauses'])
-Or = collections.namedtuple('Or', ['source', 'rule_vars', 'clauses'])
-And = collections.namedtuple('And', ['clauses'])
+class Pattern(collections.namedtuple('Pattern', ['source', 'pattern']), clj.MetaMixin):
+    pass
+
+
+class Predicate(collections.namedtuple('Predicate', ['fn', 'args']), clj.MetaMixin):
+    pass
+
+
+class Function(collections.namedtuple('Function', ['fn', 'args', 'binding']), clj.MetaMixin):
+    pass
+
+
+class RuleExpr(collections.namedtuple('RuleExpr', ['source', 'name', 'args']), clj.MetaMixin):
+    pass
+
+
+class Not(collections.namedtuple('Not', ['source', 'vars_', 'clauses']), clj.MetaMixin):
+    pass
+
+
+class Or(collections.namedtuple('Or', ['source', 'rule_vars', 'clauses']), clj.MetaMixin):
+    pass
+
+
+class And(collections.namedtuple('And', ['clauses']), clj.MetaMixin):
+    pass
 
 
 def parse_pattern_el(form):
