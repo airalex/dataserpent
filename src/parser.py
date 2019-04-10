@@ -54,6 +54,10 @@ Query = collections.namedtuple('Query', ['qfind', 'qwith', 'qin', 'qwhere'])
 FindRel = collections.namedtuple('FindRel', ['elements'])
 
 
+def is_of_size(form, size):
+    return clj.is_sequential(form) and len(form) == size
+
+
 def parse_seq(parse_el, form):
     if clj.is_sequential(form):
         acc = []
@@ -75,9 +79,18 @@ def with_source(obj, source):
     return clj.with_meta(obj, {'source': source})
 
 
+Placeholder = collections.namedtuple('Placeholder', [])
 Variable = collections.namedtuple('Variable', ['symbol'])
 SrcVar = collections.namedtuple('SrcVar', ['symbol'])
 DefaultSrc = collections.namedtuple('DefaultSrc', [])
+RulesVar = collections.namedtuple('RulesVar', [])
+Constant = collections.namedtuple('Constant', ['value'])
+PlainSymbol = collections.namedtuple('Constant', ['symbol'])
+
+
+def parse_placeholder(form):
+    if S('_') == form:
+        return Placeholder()
 
 
 def parse_variable(form):
@@ -88,6 +101,116 @@ def parse_variable(form):
 def parse_src_var(form):
     if clj.is_symbol(form) and clj.name(form)[0] == '$':
         return SrcVar(form)
+
+
+def parse_rules_var(form):
+    if S('%') == form:
+        return RulesVar()
+
+
+def parse_constant(form):
+    if not clj.is_symbol(form):
+        return Constant(form)
+
+
+def parse_plain_symbol(form):
+    if clj.is_symbol(form) and \
+       not parse_variable(form) and \
+       not parse_src_var(form) and \
+       not parse_rules_var(form) and \
+       not parse_placeholder(form):
+        return PlainSymbol(form)
+
+
+# fn-arg = (variable | constant | src-var)
+
+def parse_fn_arg(form):
+    return parse_variable(form) or \
+        parse_constant(form) or \
+        parse_src_var(form)
+
+
+RuleVars = collections.namedtuple('RuleVars', ['required', 'free'])
+
+
+def parse_rule_vars(form):
+    if clj.is_sequential(form):
+        if clj.is_sequential(form[0]):
+            required = form[0]
+            rest = clj.next_(form)
+        else:
+            required = None
+            rest = form
+        required_star = parse_seq(parse_variable, required)
+        free_star = parse_seq(parse_variable, rest)
+        if clj.is_empty(required_star) and clj.is_empty(free_star):
+            assert False, "Cannot parse rule-vars, expected [ variable+ | ([ variable+ ] variable*) ]"
+        if not is_distinct(required_star + free_star):
+            assert False, "Rule variables should be distinct"
+        return RuleVars(required_star, free_star)
+    assert False, "Cannot parse rule-vars, expected [ variable+ | ([ variable+ ] variable*) ]"
+
+# binding        = (bind-scalar | bind-tuple | bind-coll | bind-rel)
+# bind-scalar    = variable
+# bind-tuple     = [ (binding | '_')+ ]
+# bind-coll      = [ binding '...' ]
+# bind-rel       = [ [ (binding | '_')+ ] ]
+
+
+BindIgnore = collections.namedtuple('BindIgnore', [])
+BindScalar = collections.namedtuple('BindScalar', [])
+BindTuple = collections.namedtuple('BindTuple', [])
+BindColl = collections.namedtuple('BindColl', [])
+
+
+def parse_bind_ignore(form):
+    if S('_') == form:
+        return with_source(BindIgnore(), form)
+
+
+def parse_bind_scalar(form):
+    var = parse_variable(form)
+    if var is not None:
+        return with_source(BindScalar(var), form)
+
+
+def parse_bind_coll(form):
+    if is_of_size(form, 2) and form[1] == S('...'):
+        sub_bind = parse_binding(form[0])
+        if sub_bind is not None:
+            return with_source(BindColl(sub_bind), form)
+        else:
+            assert False, "Cannot parse collection binding"
+
+
+def parse_tuple_el(form):
+    return parse_bind_ignore(form) or parse_binding(form)
+
+
+def parse_bind_tuple(form):
+    sub_bindings = parse_seq(parse_tuple_el, form)
+    if sub_bindings is not None:
+        if not clj.is_empty(sub_bindings):
+            return with_source(BindTuple(sub_bindings), form)
+        else:
+            assert False, "Tuple binding cannot be empty"
+
+
+def parse_bind_rel(form):
+    if is_of_size(form, 1) and clj.is_sequential(form[0]):
+        return with_source(BindColl(parse_bind_tuple(form[0])),
+                           form)
+
+
+def parse_binding(form):
+    result = \
+        parse_bind_coll(form) or \
+        parse_bind_rel(form) or \
+        parse_bind_tuple(form) or \
+        parse_bind_ignore(form) or \
+        parse_bind_scalar(form)
+    assert result is not None, "Cannot parse binding, expected (bind-scalar | bind-tuple | bind-coll | bind-rel)"
+    return result
 
 
 def parse_pull_expr(form):
@@ -184,6 +307,38 @@ def take_source(form):
             return DefaultSrc(), form
 
 
+def parse_call(form):
+    if clj.is_sequential(form):
+        fn = form[0]
+        args = form[1:0]
+        #  (if (nil? args) [] args) -> nop
+        fn_star = parse_plain_symbol(fn) or parse_variable(fn)
+        args_star = parse_seq(parse_fn_arg, args)
+        if fn_star is not None and args_star is not None:
+            return fn_star, args_star
+
+
+def parse_pred(form):
+    if is_of_size(form, 1):
+        fn_star_args_star = parse_call(form[0])
+        if fn_star_args_star is not None:
+            fn_star, args_star = fn_star_args_star
+            return tzi.thread_first(Predicate(fn_star, args_star),
+                                    (with_source, form))
+
+
+def parse_fn(form):
+    if is_of_size(form, 2):
+        call, binding = form
+        fn_star_args_star = parse_call(call)
+        if fn_star_args_star is not None:
+            fn_star, args_star = fn_star_args_star
+            binding_star = parse_binding(binding)
+            if binding_star is not None:
+                return tzi.thread_last(Function(fn_star, args_star, binding_star),
+                                       (with_source, form))
+
+
 def _collect_vars_acc(acc, form):
     if isinstance(form, Variable):
         return acc + form
@@ -237,7 +392,78 @@ def parse_not(form):
             else:
                 assert False, "Cannot parse 'not' clause, expected [ src-var? 'not' clause+ ]"
 
-    # TODO
+
+def parse_not_join(form):
+    source_star_next_form = take_source(form)
+    if source_star_next_form is not None:
+        source_star, next_form = source_star_next_form
+        sym = next_form[0]
+        vars_ = next_form[1]
+        clauses = next_form[2:]
+        if sym == S('not-join'):
+            vars_star = parse_seq(parse_variable, vars_)
+            clauses_star = parse_clauses(clauses)
+            if vars_star is not None and clauses_star is not None:
+                return tzf.thread_first(Not(source_star, vars_star, clauses_star),
+                                        (with_source, form),
+                                        (_validate_not, form))
+            else:
+                assert False, "Cannot parse 'not-join' clause, expected [ src-var? 'not-join' [variable+] clause+ ]"
+
+
+def validate_or(clause, form):
+    required = clause["rule_vars"]["required"]
+    free = clause["rule_vars"]["free"]
+    clauses = clause["clauses"]
+    vars_ = required + free
+    for clause in clauses:
+        _validate_join_vars(vars_, [clause], form)
+    return clause
+
+
+def parse_and(form):
+    if clj.is_sequential(form) and S('and') == form[0]:
+        clauses_star = parse_clauses(clj.next_(form))
+        if clj.not_empty(clauses_star):
+            return And(clauses_star)
+        else:
+            assert False, "Cannot parse 'and' clause, expected [ 'and' clause+ ]"
+
+
+def parse_or(form):
+    source_star_next_form = take_source(form)
+    if source_star_next_form is not None:
+        source_star, next_form = source_star_next_form
+        sym = next_form[0]
+        clauses = clj.next_(next_form)
+        if S('or') == sym:
+            clauses_star = parse_seq(clj.some_fn(parse_and, parse_clause), clauses)
+            if clauses_star is not None:
+                return tzf.thread_first(Or(source_star,
+                                           RuleVars(None, collect_vars_distinct(clauses_star)),
+                                           clauses_star),
+                                        (with_source, form),
+                                        (validate_or, form))
+            else:
+                assert False, "Cannot parse 'or' clause, expected [ src-var? 'or' clause+ ]"
+
+
+def parse_or_join(form):
+    source_star_next_form = take_source(form)
+    if source_star_next_form is not None:
+        source_star, next_form = source_star_next_form
+        sym = next_form[0]
+        vars_ = next_form[1]
+        clauses = next_form[2:]
+        if S('or-join') == sym:
+            vars_star = parse_rule_vars(vars_)
+            clauses_star = parse_seq(clj.some_fn(parse_and, parse_clause), clauses)
+            if vars_star is not None and clauses_star is not None:
+                return tzf.thread_first(Or(source_star, vars_star, clauses_star),
+                                        (with_source, form),
+                                        (validate_or, form))
+            else:
+                assert False, "Cannot parse 'or-join' clause, expected [ src-var? 'or-join' [variable+] clause+ ]"
 
 
 def parse_clause(form):

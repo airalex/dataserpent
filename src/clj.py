@@ -58,6 +58,10 @@ def is_empty(coll):
     return not coll
 
 
+def not_empty(coll):
+    return not is_empty(coll)
+
+
 def is_distinct(seq):
     return tzi.isdistinct(seq)
 
@@ -65,3 +69,12 @@ def is_distinct(seq):
 def mapv(f, *colls):
     assert len(colls) == 1, 'mapv is temporarily defined only for single coll'
     return list(map(f, colls[0]))
+
+
+def some_fn(*fns):
+    assert len(fns) == 2, 'some_fn is temporarily defined only for two fns'
+
+    def _some(*args):
+        return fns[0](args) or fns[1](args)
+
+    return _some
