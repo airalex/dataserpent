@@ -572,6 +572,7 @@ def parse_clause(form):
     assert result is not None, \
         'Cannot parse clause, expected' + \
         ' (data-pattern | pred-expr | fn-expr | rule-expr | not-clause | not-join-clause | or-clause | or-join-clause)'
+    return result
 
 
 def parse_clauses(clauses):
