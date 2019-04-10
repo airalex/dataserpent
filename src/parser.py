@@ -298,6 +298,12 @@ Or = collections.namedtuple('Or', ['source', 'rule_vars', 'clauses'])
 And = collections.namedtuple('And', ['clauses'])
 
 
+def parse_pattern_el(form):
+    return parse_placeholder(form) or \
+        parse_variable(form) or \
+        parse_constant(form)
+
+
 def take_source(form):
     if clj.is_sequential(form):
         source = parse_src_var(form[0])
@@ -305,6 +311,18 @@ def take_source(form):
             return source, clj.next_(form)
         else:
             return DefaultSrc(), form
+
+
+def parse_pattern(form):
+    source_star_next_form = take_source(form)
+    if source_star_next_form is not None:
+        source_star, next_form = source_star_next_form
+        pattern_star = parse_seq(parse_pattern_el, next_form)
+        if pattern_star is not None:
+            if not clj.is_empty(pattern_star):
+                return with_source(Pattern(source_star, pattern_star), form)
+            else:
+                assert False, "Pattern could not be empty"
 
 
 def parse_call(form):
@@ -337,6 +355,22 @@ def parse_fn(form):
             if binding_star is not None:
                 return tzi.thread_last(Function(fn_star, args_star, binding_star),
                                        (with_source, form))
+
+
+def parse_rule_expr(form):
+    source_star_next_form = take_source(form)
+    if source_star_next_form is not None:
+        source_star, next_form = source_star_next_form
+        name = next_form[0]
+        args = clj.next_(next_form)
+        name_star = parse_plain_symbol(name)
+        args_star = parse_seq(parse_pattern_el, args)
+        if name_star is not None:
+            if clj.is_empty(args):
+                assert False, "rule-expr requires at least one argument"
+            if args_star is None:
+                assert False, "Cannot parse rule-expr arguments, expected [ (variable | constant | '_')+ ]"
+            return RuleExpr(source_star, name_star, args_star)
 
 
 def _collect_vars_acc(acc, form):
