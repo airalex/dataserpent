@@ -16,6 +16,7 @@ flake8 = "*"
 toolz = "*"
 ipython = "*"
 ipdb = "*"
+edn-format = "*"
 
 [requires]
 python_version = "3.7"

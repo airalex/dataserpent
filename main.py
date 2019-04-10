@@ -1,5 +1,7 @@
 from pprint import pprint as pp
 
+import edn_format
+
 import src.parser as parser
 from src.clj import K, S
 
@@ -9,13 +11,14 @@ def main():
     # print(k)
     # print(repr(k))
 
-    query = [K('find'), S('?e'),
-             K('where'), [S('?e'), K('name')]]
-    # pp(query2map(query))
-    # => {Keyword('find'): [Symbol('?e')],
-    #     Keyword('where'): [[Symbol('?e'), Keyword('name')]]}
-    parsed_query = parser.parse_query(query)
-    pp(parsed_query)
+    # query = [K('find'), S('?e'),
+    #          K('where'), [S('?e'), K('name')]]
+    # # pp(query2map(query))
+    # # => {Keyword('find'): [Symbol('?e')],
+    # #     Keyword('where'): [[Symbol('?e'), Keyword('name')]]}
+    # parsed_query = parser.parse_query(query)
+    # pp(parsed_query)
+    pass
 
 
 if __name__ == '__main__':

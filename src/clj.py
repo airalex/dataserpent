@@ -1,51 +1,29 @@
 import collections.abc
+import typing as t
+
+import edn_format as edn
 
 
-"""Port of data structures and predicates from Clojure"""
+"""Port of data structures and predicates from Clojure.
+
+Uses data structures from edn_format, but provides indirection layer in case the library should be replaced.
+"""
 
 
-class Keyword:
-    def __init__(self, name):
-        self._name = name
+Keyword = edn.Keyword
+Symbol = edn.Symbol
 
-    def __str__(self):
-        return ':' + self._name
-
-    def __repr__(self):
-        return "Keyword('{}')".format(self._name)
-
-    def __hash__(self):
-        return hash(self._name)
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and self._name == other._name
-
-    def name(self):
-        return self._name
-
-
-class Symbol:
-    def __init__(self, name):
-        self._name = name
-
-    def __str__(self):
-        return "'{}".format(self._name)
-
-    def __repr__(self):
-        return "Symbol('{}')".format(self._name)
-
-    def __hash__(self):
-        return hash(self._name)
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and self._name == other._name
-
-    def name(self):
-        return self._name
-
-
+# common usage aliases
 K = Keyword
 S = Symbol
+
+
+def str2edn(form: str):
+    return edn.loads(form)
+
+
+def name(form: t.Union[Keyword, Symbol]) -> str:
+    return form.name
 
 
 def is_keyword(obj) -> bool:

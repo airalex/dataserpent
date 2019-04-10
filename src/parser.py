@@ -52,7 +52,7 @@ Variable = collections.namedtuple('Variable', ['symbol'])
 
 
 def parse_variable(form):
-    if clj.is_symbol(form) and form.name()[0] == "?":
+    if clj.is_symbol(form) and clj.name(form)[0] == "?":
         return Variable(form)
 
 
