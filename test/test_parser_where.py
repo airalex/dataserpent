@@ -17,3 +17,20 @@ def test_pattern_a():
                        dp.Variable(clj.S('?a')),
                        dp.Placeholder(None),
                        dp.Placeholder(None)])
+
+
+def test_pattern_x_a():
+    assert dp.parse_clause(clj.str2edn('[$x _ ?a _ _]')) \
+        == dp.Pattern(dp.SrcVar(clj.S('$x')),
+                      [dp.Placeholder(None),
+                       dp.Variable(clj.S('?a')),
+                       dp.Placeholder(None),
+                       dp.Placeholder(None)])
+
+
+def test_pattern_x_name_v():
+    assert dp.parse_clause(clj.str2edn('[$x _ :name ?v]')) \
+        == dp.Pattern(dp.SrcVar(clj.S('$x')),
+                      [dp.Placeholder(None),
+                       dp.Constant(clj.K(':name')),
+                       dp.Variable(clj.S('?v'))])
