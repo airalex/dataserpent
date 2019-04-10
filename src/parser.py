@@ -10,7 +10,8 @@ import src.clj as clj
 from src.clj import K, S
 
 
-# implementation based on https://github.com/tonsky/datascript/blob/aa67e7a4d99b954a357b0c6533bd7039f5d99e54/src/datascript/parser.cljc
+# implementation based on
+# https://github.com/tonsky/datascript/blob/aa67e7a4d99b954a357b0c6533bd7039f5d99e54/src/datascript/parser.cljc
 
 
 def query2map(query: list) -> dict:
@@ -44,6 +45,7 @@ def parse_seq(parse_el, form):
             if parsed is not None:
                 acc.append(parsed)
             else:
+                acc = None
                 break
         return acc
 
