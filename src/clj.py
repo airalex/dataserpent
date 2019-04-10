@@ -1,7 +1,9 @@
 import collections.abc
 import typing as t
+import copy
 
 import edn_format as edn
+import toolz.itertoolz as tzi
 
 
 """Port of data structures and predicates from Clojure.
@@ -36,3 +38,30 @@ def is_symbol(obj) -> bool:
 
 def is_sequential(obj) -> bool:
     return isinstance(obj, collections.abc.Sequence)
+
+
+def next_(seq):
+    return list(tzi.drop(1, seq))
+
+
+def into(to, from_):
+    return to + from_
+
+
+def with_meta(obj, m):
+    copied = copy.copy(obj)
+    copied.clj_meta = m
+    return copied
+
+
+def is_empty(coll):
+    return not coll
+
+
+def is_distinct(seq):
+    return tzi.isdistinct(seq)
+
+
+def mapv(f, *colls):
+    assert len(colls) == 1, 'mapv is temporarily defined only for single coll'
+    return list(map(f, colls[0]))
