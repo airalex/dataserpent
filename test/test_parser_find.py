@@ -22,3 +22,12 @@ def test_parse_find_scalar():
 def test_parse_find_tuple():
     assert dp.parse_find(clj.str2edn('[[?a ?b]]')) \
         == dp.FindTuple([dp.Variable(clj.S('?a')), dp.Variable((clj.S('?b')))])
+
+# TODO
+# test-parse-aggregate
+
+# TODO
+# test-parse-custom-aggregates
+
+# TODO
+# test-parse-find-elements
