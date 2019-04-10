@@ -111,7 +111,7 @@ def parse_find_scalar(form):
 def parse_find_tuple(form):
     if clj.is_sequential(form) and len(form) == 1:
         inner = form[0]
-        element = parse_find_elem(inner)
+        element = parse_seq(parse_find_elem, inner)
         if element is not None:
             return FindTuple(element)
 
