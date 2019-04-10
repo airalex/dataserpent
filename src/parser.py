@@ -184,15 +184,15 @@ class BindIgnore(collections.namedtuple('BindIgnore', []), clj.MetaMixin):
     pass
 
 
-class BindScalar(collections.namedtuple('BindScalar', []), clj.MetaMixin):
+class BindScalar(collections.namedtuple('BindScalar', ['variable']), clj.MetaMixin):
     pass
 
 
-class BindTuple(collections.namedtuple('BindTuple', []), clj.MetaMixin):
+class BindTuple(collections.namedtuple('BindTuple', ['bindings']), clj.MetaMixin):
     pass
 
 
-class BindColl(collections.namedtuple('BindColl', []), clj.MetaMixin):
+class BindColl(collections.namedtuple('BindColl', ['binding']), clj.MetaMixin):
     pass
 
 
