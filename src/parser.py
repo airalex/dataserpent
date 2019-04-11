@@ -389,8 +389,6 @@ def parse_pattern(form):
 
 def parse_call(form):
     if clj.is_sequential(form):
-        # fn = form[0]
-        # args = form[1:0]
         fn, args = clj.extract_seq(form, n_first=1)
         if args is None:
             args = []
@@ -417,8 +415,8 @@ def parse_fn(form):
             fn_star, args_star = fn_star_args_star
             binding_star = parse_binding(binding)
             if binding_star is not None:
-                return tzf.thread_last(Function(fn_star, args_star, binding_star),
-                                       (with_source, form))
+                return tzf.thread_first(Function(fn_star, args_star, binding_star),
+                                        (with_source, form))
 
 
 def parse_rule_expr(form):

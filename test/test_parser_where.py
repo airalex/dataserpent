@@ -54,3 +54,11 @@ def test_pred_custom():
     expected = dp.Predicate(dp.PlainSymbol(clj.S('?custom-pred')),
                             [dp.Variable(clj.S('?a'))])
     assert dp.parse_clause(clause) == expected
+
+
+def test_fn_a_1_x():
+    clause = clj.str2edn('[(fn ?a 1) ?x]')
+    expected = dp.Function(dp.PlainSymbol(clj.S('fn')),
+                           [dp.Variable(clj.S('?a')), dp.Constant(1)],
+                           dp.BindScalar(dp.Variable(clj.S('?x'))))
+    assert dp.parse_clause(clause) == expected
