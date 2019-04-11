@@ -34,3 +34,10 @@ def test_pattern_x_name_v():
                       [dp.Placeholder(None),
                        dp.Constant(clj.K('name')),
                        dp.Variable(clj.S('?v'))])
+
+
+def test_pred_a_1():
+    clause = clj.str2edn('[(pred ?a 1)]')
+    expected = dp.Predicate(dp.PlainSymbol(clj.S('pred')),
+                            [dp.Variable(clj.S('?a')), dp.Constant(1)])
+    assert dp.parse_clause(clause) == expected
