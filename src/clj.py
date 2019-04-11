@@ -100,3 +100,7 @@ def extract_seq(seq, n_first):
         rest = None
 
     return tuple(firsts) + (rest,)
+
+
+def first(seq):
+    return get(seq, 0)

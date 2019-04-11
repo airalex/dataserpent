@@ -33,7 +33,7 @@ class ITraversable(abc.ABC):
 
 def query2map(query: list) -> dict:
     def _loop(parsed: dict, key, qs: list):
-        q = tzi.get(0, qs, None)
+        q = clj.get(qs, 0)
         if q is not None:
             if clj.is_keyword(q):
                 return _loop(parsed,
@@ -161,8 +161,8 @@ class RuleVars(collections.namedtuple('RuleVars', ['required', 'free']), clj.Met
 
 def parse_rule_vars(form):
     if clj.is_sequential(form):
-        if clj.is_sequential(form[0]):
-            required = form[0]
+        if clj.is_sequential(clj.get(form, 0)):
+            required = clj.get(form, 0)
             rest = clj.next_(form)
         else:
             required = None
@@ -212,7 +212,7 @@ def parse_bind_scalar(form):
 
 def parse_bind_coll(form):
     if is_of_size(form, 2) and form[1] == S('...'):
-        sub_bind = parse_binding(form[0])
+        sub_bind = parse_binding(clj.get(form, 0))
         if sub_bind is not None:
             return with_source(BindColl(sub_bind), form)
         else:
@@ -233,8 +233,8 @@ def parse_bind_tuple(form):
 
 
 def parse_bind_rel(form):
-    if is_of_size(form, 1) and clj.is_sequential(form[0]):
-        return with_source(BindColl(parse_bind_tuple(form[0])),
+    if is_of_size(form, 1) and clj.is_sequential(clj.get(form, 0)):
+        return with_source(BindColl(parse_bind_tuple(clj.get(form, 0))),
                            form)
 
 
@@ -292,23 +292,23 @@ class FindTuple(collections.namedtuple('FindTuple', ['element']), clj.MetaMixin)
 
 def parse_find_coll(form):
     if clj.is_sequential(form) and len(form) == 1:
-        inner = form[0]
+        inner = clj.get(form, 0)
         if clj.is_sequential(inner) and len(inner) == 2 and inner[1] == S('...'):
-            element = parse_find_elem(inner[0])
+            element = parse_find_elem(clj.get(inner, 0))
             if element is not None:
                 return FindColl(element)
 
 
 def parse_find_scalar(form):
     if clj.is_sequential(form) and len(form) == 2 and form[1] == S('.'):
-        element = parse_find_elem(form[0])
+        element = parse_find_elem(clj.first(form))
         if element is not None:
             return FindScalar(element)
 
 
 def parse_find_tuple(form):
     if clj.is_sequential(form) and len(form) == 1:
-        inner = form[0]
+        inner = clj.first(form)
         element = parse_seq(parse_find_elem, inner)
         if element is not None:
             return FindTuple(element)
@@ -368,9 +368,9 @@ def parse_pattern_el(form):
 
 def take_source(form):
     if clj.is_sequential(form):
-        source = parse_src_var(form[0])
-        if source is not None:
-            return source, clj.next_(form)
+        source_star = parse_src_var(clj.first(form))
+        if source_star is not None:
+            return source_star, clj.next_(form)
         else:
             return DefaultSrc(None), form
 
@@ -389,9 +389,11 @@ def parse_pattern(form):
 
 def parse_call(form):
     if clj.is_sequential(form):
-        fn = form[0]
-        args = form[1:0]
-        #  (if (nil? args) [] args) -> nop
+        # fn = form[0]
+        # args = form[1:0]
+        fn, args = clj.extract_seq(form, n_first=1)
+        if args is None:
+            args = []
         fn_star = parse_plain_symbol(fn) or parse_variable(fn)
         args_star = parse_seq(parse_fn_arg, args)
         if fn_star is not None and args_star is not None:
@@ -400,10 +402,10 @@ def parse_call(form):
 
 def parse_pred(form):
     if is_of_size(form, 1):
-        fn_star_args_star = parse_call(form[0])
+        fn_star_args_star = parse_call(clj.first(form))
         if fn_star_args_star is not None:
             fn_star, args_star = fn_star_args_star
-            return tzi.thread_first(Predicate(fn_star, args_star),
+            return tzf.thread_first(Predicate(fn_star, args_star),
                                     (with_source, form))
 
 
@@ -415,7 +417,7 @@ def parse_fn(form):
             fn_star, args_star = fn_star_args_star
             binding_star = parse_binding(binding)
             if binding_star is not None:
-                return tzi.thread_last(Function(fn_star, args_star, binding_star),
+                return tzf.thread_last(Function(fn_star, args_star, binding_star),
                                        (with_source, form))
 
 
@@ -423,8 +425,9 @@ def parse_rule_expr(form):
     source_star_next_form = take_source(form)
     if source_star_next_form is not None:
         source_star, next_form = source_star_next_form
-        name = next_form[0]
-        args = clj.next_(next_form)
+        # name = next_form[0]
+        # args = clj.next_(next_form)
+        name, args = clj.extract_seq(next_form, n_first=1)
         name_star = parse_plain_symbol(name)
         args_star = parse_seq(parse_pattern_el, args)
         if name_star is not None:
@@ -475,8 +478,7 @@ def parse_not(form):
     source_star_next_form = take_source(form)
     if source_star_next_form is not None:
         source_star, next_form = source_star_next_form
-        sym = next_form[0]
-        clauses = clj.next_(next_form)
+        sym, clauses = clj.extract_seq(next_form, 1)
         if sym == S('not'):
             clauses_star = parse_clauses(clauses)
             if clauses_star is not None:
@@ -493,9 +495,7 @@ def parse_not_join(form):
     source_star_next_form = take_source(form)
     if source_star_next_form is not None:
         source_star, next_form = source_star_next_form
-        sym = next_form[0]
-        vars_ = next_form[1]
-        clauses = next_form[2:]
+        sym, vars_, clauses = clj.extract_seq(next_form, n_first=2)
         if sym == S('not-join'):
             vars_star = parse_seq(parse_variable, vars_)
             clauses_star = parse_clauses(clauses)
@@ -518,7 +518,7 @@ def validate_or(clause, form):
 
 
 def parse_and(form):
-    if clj.is_sequential(form) and S('and') == form[0]:
+    if clj.is_sequential(form) and S('and') == clj.first(form):
         clauses_star = parse_clauses(clj.next_(form))
         if clj.not_empty(clauses_star):
             return And(clauses_star)
@@ -530,8 +530,9 @@ def parse_or(form):
     source_star_next_form = take_source(form)
     if source_star_next_form is not None:
         source_star, next_form = source_star_next_form
-        sym = next_form[0]
-        clauses = clj.next_(next_form)
+        # sym = next_form[0]
+        # clauses = clj.next_(next_form)
+        sym, clauses = clj.extract_seq(next_form, 1)
         if S('or') == sym:
             clauses_star = parse_seq(clj.some_fn(parse_and, parse_clause), clauses)
             if clauses_star is not None:
@@ -548,9 +549,7 @@ def parse_or_join(form):
     source_star_next_form = take_source(form)
     if source_star_next_form is not None:
         source_star, next_form = source_star_next_form
-        sym = next_form[0]
-        vars_ = next_form[1]
-        clauses = next_form[2:]
+        sym, vars_, clauses = clj.extract_seq(next_form, n_first=2)
         if S('or-join') == sym:
             vars_star = parse_rule_vars(vars_)
             clauses_star = parse_seq(clj.some_fn(parse_and, parse_clause), clauses)
