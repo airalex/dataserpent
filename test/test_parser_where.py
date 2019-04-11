@@ -41,3 +41,16 @@ def test_pred_a_1():
     expected = dp.Predicate(dp.PlainSymbol(clj.S('pred')),
                             [dp.Variable(clj.S('?a')), dp.Constant(1)])
     assert dp.parse_clause(clause) == expected
+
+
+def test_pred():
+    clause = clj.str2edn('[(pred)]')
+    expected = dp.Predicate(dp.PlainSymbol(clj.S('pred')), [])
+    assert dp.parse_clause(clause) == expected
+
+
+def test_pred_custom():
+    clause = clj.str2edn('[(?custom-pred ?a)]')
+    expected = dp.Predicate(dp.PlainSymbol(clj.S('?custom-pred')),
+                            [dp.Variable(clj.S('?a'))])
+    assert dp.parse_clause(clause) == expected
