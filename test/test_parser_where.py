@@ -2,6 +2,8 @@ import src.parser as dp
 import src.clj as clj
 
 
+# deftest pattern
+
 def test_pattern_eav():
     assert dp.parse_clause(clj.str2edn('[?e ?a ?v]')) \
         == dp.Pattern(dp.DefaultSrc(None),
@@ -36,6 +38,8 @@ def test_pattern_x_name_v():
                        dp.Variable(clj.S('?v'))])
 
 
+# deftest test-pred
+
 def test_pred_a_1():
     clause = clj.str2edn('[(pred ?a 1)]')
     expected = dp.Predicate(dp.PlainSymbol(clj.S('pred')),
@@ -56,9 +60,35 @@ def test_pred_custom():
     assert dp.parse_clause(clause) == expected
 
 
+# deftest test-fn
+
 def test_fn_a_1_x():
     clause = clj.str2edn('[(fn ?a 1) ?x]')
     expected = dp.Function(dp.PlainSymbol(clj.S('fn')),
                            [dp.Variable(clj.S('?a')), dp.Constant(1)],
+                           dp.BindScalar(dp.Variable(clj.S('?x'))))
+    assert dp.parse_clause(clause) == expected
+
+
+def test_fn_x():
+    clause = clj.str2edn('[(fn) ?x]')
+    expected = dp.Function(dp.PlainSymbol(clj.S('fn')),
+                           [],
+                           dp.BindScalar(dp.Variable(clj.S('?x'))))
+    assert dp.parse_clause(clause) == expected
+
+
+def test_custom_fn_x():
+    clause = clj.str2edn('[(?custom-fn) ?x]')
+    expected = dp.Function(dp.Variable(clj.S('?custom-fn')),
+                           [],
+                           dp.BindScalar(dp.Variable(clj.S('?x'))))
+    assert dp.parse_clause(clause) == expected
+
+
+def test_custom_fn_arg_x():
+    clause = clj.str2edn('[(?custom-fn ?arg) ?x]')
+    expected = dp.Function(dp.Variable(clj.S('?custom-fn')),
+                           [dp.Variable(clj.S('?arg'))],
                            dp.BindScalar(dp.Variable(clj.S('?x'))))
     assert dp.parse_clause(clause) == expected
