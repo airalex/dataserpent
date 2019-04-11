@@ -2,7 +2,6 @@ from pprint import pprint as pp
 import typing as t
 import collections
 import collections.abc
-import functools
 import abc
 
 import toolz.itertoolz as tzi
@@ -423,8 +422,6 @@ def parse_rule_expr(form):
     source_star_next_form = take_source(form)
     if source_star_next_form is not None:
         source_star, next_form = source_star_next_form
-        # name = next_form[0]
-        # args = clj.next_(next_form)
         name, args = clj.extract_seq(next_form, n_first=1)
         name_star = parse_plain_symbol(name)
         args_star = parse_seq(parse_pattern_el, args)
@@ -438,15 +435,15 @@ def parse_rule_expr(form):
 
 def _collect_vars_acc(acc, form):
     if isinstance(form, Variable):
-        return acc + form
+        return clj.conj(acc, form)
     if isinstance(form, Not):
         return clj.into(acc, form.vars_)
     if isinstance(form, Or):
         return _collect_vars_acc(acc, form.rule_vars)
-    if clj.satisfies(form, ITraversable):
+    if clj.satisfies(ITraversable, form):
         return _collect_vars(form, acc)
     if clj.is_sequential(form):
-        return list(functools.reduce(_collect_vars_acc, initial=acc, sequence=form))
+        return list(clj.reduce(_collect_vars_acc, acc, form))
     return acc
 
 

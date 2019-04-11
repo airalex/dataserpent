@@ -1,6 +1,7 @@
 import collections.abc
 import typing as t
 import copy
+import functools
 
 import edn_format as edn
 import toolz.itertoolz as tzi
@@ -38,6 +39,10 @@ def is_symbol(obj) -> bool:
 
 def is_sequential(obj) -> bool:
     return isinstance(obj, collections.abc.Sequence)
+
+
+def satisfies(protocol, x):
+    return isinstance(x, protocol)
 
 
 def next_(seq):
@@ -104,3 +109,12 @@ def extract_seq(seq, n_first):
 
 def first(seq):
     return get(seq, 0)
+
+
+def reduce(f, val, coll):
+    # note the argument ordering
+    return functools.reduce(f, coll, val)
+
+
+def conj(coll, x):
+    return [x] + coll

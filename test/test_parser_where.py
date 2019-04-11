@@ -134,3 +134,14 @@ def test_rule_expr_friends_something():
     with pytest.raises(AssertionError) as excinfo:
         dp.parse_clause(clause)
     assert "Cannot parse rule-expr arguments" in str(excinfo.value)
+
+
+# deftest not-clause
+
+def test_not_clause_not_e_follows_x():
+    clause = clj.str2edn('(not [?e :follows ?x])')
+    expected = dp.Not(dp.DefaultSrc(None),
+                      [dp.Variable(clj.S('?e')), dp.Variable(clj.S('?x'))],
+                      [dp.Pattern(dp.DefaultSrc(None),
+                                  [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))])])
+    assert dp.parse_clause(clause) == expected
