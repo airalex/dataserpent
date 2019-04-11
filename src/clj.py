@@ -44,6 +44,10 @@ def next_(seq):
     return list(tzi.drop(1, seq))
 
 
+def get(seq, ind, default=None):
+    return tzi.get(ind, seq, default)
+
+
 def into(to, from_):
     return to + from_
 
@@ -81,4 +85,18 @@ def with_meta(obj, m):
 
 
 class MetaMixin:
-    meta = {}
+    clj_meta = {}
+
+
+def extract_seq(seq, n_first):
+    """My destructuring implementation"""
+    firsts = []
+    for i in range(n_first):
+        val = get(seq, i)
+        firsts.append(val)
+
+    rest = seq[n_first:]
+    if is_empty(rest):
+        rest = None
+
+    return tuple(firsts) + (rest,)
