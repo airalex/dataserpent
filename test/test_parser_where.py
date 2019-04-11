@@ -1,3 +1,5 @@
+import pytest
+
 import src.parser as dp
 import src.clj as clj
 
@@ -118,3 +120,17 @@ def test_rule_expr_1_friends_x_y():
                            dp.PlainSymbol(clj.S('friends')),
                            [dp.Variable(clj.S('?x')), dp.Variable(clj.S('?y'))])
     assert dp.parse_clause(clause) == expected
+
+
+def test_rule_expr_friends():
+    clause = clj.str2edn('(friends)')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert "rule-expr requires at least one argument" in str(excinfo.value)
+
+
+def test_rule_expr_friends_something():
+    clause = clj.str2edn('(friends something)')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert "Cannot parse rule-expr arguments" in str(excinfo.value)
