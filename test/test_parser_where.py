@@ -78,7 +78,7 @@ def test_fn_x():
     assert dp.parse_clause(clause) == expected
 
 
-def test_custom_fn_x():
+def test_fn_custom_fn_x():
     clause = clj.str2edn('[(?custom-fn) ?x]')
     expected = dp.Function(dp.Variable(clj.S('?custom-fn')),
                            [],
@@ -86,9 +86,35 @@ def test_custom_fn_x():
     assert dp.parse_clause(clause) == expected
 
 
-def test_custom_fn_arg_x():
+def test_fn_custom_fn_arg_x():
     clause = clj.str2edn('[(?custom-fn ?arg) ?x]')
     expected = dp.Function(dp.Variable(clj.S('?custom-fn')),
                            [dp.Variable(clj.S('?arg'))],
                            dp.BindScalar(dp.Variable(clj.S('?x'))))
+    assert dp.parse_clause(clause) == expected
+
+
+# deftest rule-expr
+
+def test_rule_expr_friends_x_y():
+    clause = clj.str2edn('(friends ?x ?y)')
+    expected = dp.RuleExpr(dp.DefaultSrc(None),
+                           dp.PlainSymbol(clj.S('friends')),
+                           [dp.Variable(clj.S('?x')), dp.Variable(clj.S('?y'))])
+    assert dp.parse_clause(clause) == expected
+
+
+def test_rule_expr_friends_ivan():
+    clause = clj.str2edn('(friends "Ivan" _)')
+    expected = dp.RuleExpr(dp.DefaultSrc(None),
+                           dp.PlainSymbol(clj.S('friends')),
+                           [dp.Constant("Ivan"), dp.Placeholder(None)])
+    assert dp.parse_clause(clause) == expected
+
+
+def test_rule_expr_1_friends_x_y():
+    clause = clj.str2edn('($1 friends ?x ?y)')
+    expected = dp.RuleExpr(dp.SrcVar(clj.S('$1')),
+                           dp.PlainSymbol(clj.S('friends')),
+                           [dp.Variable(clj.S('?x')), dp.Variable(clj.S('?y'))])
     assert dp.parse_clause(clause) == expected
