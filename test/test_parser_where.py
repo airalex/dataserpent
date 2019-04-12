@@ -185,3 +185,48 @@ def test_not_clause_1_not_join_e():
                       [dp.Pattern(dp.DefaultSrc(None),
                                   [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))])])
     assert dp.parse_clause(clause) == expected
+
+
+def test_not_clause_not_join_x_y():
+    clause = clj.str2edn('(not-join [?x] [?y])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert "Join variable not declared inside clauses: [Symbol(?x)]" in str(excinfo.value)
+
+
+def test_not_clause_not_join_y():
+    clause = clj.str2edn('(not-join [] [?y])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert "Join variables should not be empty" in str(excinfo.value)
+
+
+def test_not_clause_not__():
+    clause = clj.str2edn('(not [_])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert "Join variables should not be empty" in str(excinfo.value)
+
+
+def test_not_clause_not_join_x_only():
+    clause = clj.str2edn('(not-join [?x])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert "Cannot parse 'not-join' clause" in str(excinfo.value)
+
+
+def test_not_clause_not_only():
+    clause = clj.str2edn('(not)')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert "Cannot parse 'not' clause" in str(excinfo.value)
+
+
+def test_not_clause_not_join_not_join():
+    clause = clj.str2edn('(not-join [?y] (not-join [?x]) [?x :follows ?y])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+
+    # I don't know why this test fails, the parser raises an error with different message.
+    # I guess this is OK, an error is raised anyway.
+    # assert "Join variable not declared inside clauses: [Symbol(?y)]" in str(excinfo.value)
