@@ -230,3 +230,16 @@ def test_not_clause_not_join_not_join():
     # I don't know why this test fails, the parser raises an error with different message.
     # I guess this is OK, an error is raised anyway.
     # assert "Join variable not declared inside clauses: [Symbol(?y)]" in str(excinfo.value)
+
+
+# deftest or-clause
+
+
+def test_or_clause_e_follows_x():
+    clause = clj.str2edn('(or [?e :follows ?x])')
+    expected = dp.Or(dp.DefaultSrc(None),
+                     dp.RuleVars(None, [dp.Variable(clj.S('?e')), dp.Variable(clj.S('?x'))]),
+                     [dp.Pattern(
+                         dp.DefaultSrc(None),
+                         [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))])])
+    assert dp.parse_clause(clause) == expected
