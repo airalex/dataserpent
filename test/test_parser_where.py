@@ -234,7 +234,6 @@ def test_not_clause_not_join_not_join():
 
 # deftest or-clause
 
-
 def test_or_clause_e_follows_x():
     clause = clj.str2edn('(or [?e :follows ?x])')
     expected = dp.Or(dp.DefaultSrc(None),
@@ -243,3 +242,56 @@ def test_or_clause_e_follows_x():
                          dp.DefaultSrc(None),
                          [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))])])
     assert dp.parse_clause(clause) == expected
+
+
+def test_or_clause_e_follows_x_or_e_friend_x():
+    clause = clj.str2edn('(or [?e :follows ?x] [?e :friend ?x])')
+    expected = dp.Or(dp.DefaultSrc(None),
+                     dp.RuleVars(None, [dp.Variable(clj.S('?e')), dp.Variable(clj.S('?x'))]),
+                     [dp.Pattern(
+                         dp.DefaultSrc(None),
+                         [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))]),
+                      dp.Pattern(
+                          dp.DefaultSrc(None),
+                          [dp.Variable(clj.S('?e')), dp.Constant(clj.K('friend')), dp.Variable(clj.S('?x'))])])
+    assert dp.parse_clause(clause) == expected
+
+
+def test_or_clause_e_follows_x_or_e_friend_x_and_x_friend_e():
+    clause = clj.str2edn('(or [?e :follows ?x] (and [?e :friend ?x] [?x :friend ?e]))')
+    expected = dp.Or(dp.DefaultSrc(None),
+                     dp.RuleVars(None, [dp.Variable(clj.S('?e')), dp.Variable(clj.S('?x'))]),
+                     [dp.Pattern(
+                         dp.DefaultSrc(None),
+                         [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))]),
+                      dp.And(
+                          [dp.Pattern(
+                              dp.DefaultSrc(None),
+                              [dp.Variable(clj.S('?e')), dp.Constant(clj.K('friend')), dp.Variable(clj.S('?x'))]),
+                           dp.Pattern(
+                               dp.DefaultSrc(None),
+                               [dp.Variable(clj.S('?x')), dp.Constant(clj.K('friend')), dp.Variable(clj.S('?e'))])])])
+    assert dp.parse_clause(clause) == expected
+
+
+def test_or_clause_1_or_x():
+    clause = clj.str2edn('($1 or [?x])')
+    expected = dp.Or(dp.SrcVar(clj.S('$1')),
+                     dp.RuleVars(None, [dp.Variable(clj.S('?x'))]),
+                     [dp.Pattern(
+                         dp.DefaultSrc(None),
+                         [dp.Variable(clj.S('?x'))])])
+    assert dp.parse_clause(clause) == expected
+
+def test_or_clause_or_join_e_follows_x_friend_y():
+    clause = clj.str2edn('(or-join [?e] [?e :follows ?x] [?e :friend ?y])')
+    expected = dp.Or(dp.DefaultSrc(None),
+                     dp.RuleVars(None, [dp.Variable(clj.S('?e'))]),
+                     [dp.Pattern(
+                         dp.DefaultSrc(None),
+                         [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))]),
+                     dp.Pattern(
+                         dp.DefaultSrc(None),
+                         [dp.Variable(clj.S('?e')), dp.Constant(clj.K('friend')), dp.Variable(clj.S('?y'))])])
+    assert dp.parse_clause(clause) == expected
+
