@@ -170,7 +170,7 @@ def parse_rule_vars(form):
         free_star = parse_seq(parse_variable, rest)
         if clj.is_empty(required_star) and clj.is_empty(free_star):
             assert False, "Cannot parse rule-vars, expected [ variable+ | ([ variable+ ] variable*) ]"
-        if not is_distinct(required_star + free_star):
+        if not is_distinct(clj.concat(required_star, free_star)):
             assert False, "Rule variables should be distinct"
         return RuleVars(required_star, free_star)
     assert False, "Cannot parse rule-vars, expected [ variable+ | ([ variable+ ] variable*) ]"
@@ -532,8 +532,6 @@ def parse_or(form):
     source_star_next_form = take_source(form)
     if source_star_next_form is not None:
         source_star, next_form = source_star_next_form
-        # sym = next_form[0]
-        # clauses = clj.next_(next_form)
         sym, clauses = clj.extract_seq(next_form, 1)
         if S('or') == sym:
             clauses_star = parse_seq(clj.some_fn(parse_and, parse_clause), clauses)
