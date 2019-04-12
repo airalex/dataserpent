@@ -318,3 +318,66 @@ def test_or_clause_1_or_join_e_x():
                          dp.DefaultSrc(None),
                          [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))])])
     assert dp.parse_clause(clause) == expected
+
+
+def test_or_clause_or_join_x_y():
+    clause = clj.str2edn('(or-join [?x] [?y])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Join variable not declared inside clauses: [Symbol(?x)]"
+
+
+def test_or_clause_or_x_x_y():
+    clause = clj.str2edn('(or [?x] [?x ?y])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Join variable not declared inside clauses: [Symbol(?y)]"
+
+
+def test_or_clause_or_x_y():
+    clause = clj.str2edn('(or [?x] [?y])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Join variable not declared inside clauses: [Symbol(?y)]"
+
+
+def test_or_clause_or_join_x_y_x_y_y():
+    clause = clj.str2edn('(or-join [?x ?y] [?x ?y] [?y])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Join variable not declared inside clauses: [Symbol(?x)]"
+
+
+def test_or_clause_or_join__y():
+    clause = clj.str2edn('(or-join [] [?y])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Cannot parse rule-vars, expected [ variable+ | ([ variable+ ] variable*) ]"
+
+
+def test_or_clause_or__():
+    clause = clj.str2edn('(or [_])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Join variables should not be empty"
+
+
+def test_or_clause_or_join_x():
+    clause = clj.str2edn('(or-join [?x])')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Cannot parse 'or-join' clause, expected [ src-var? 'or-join' [variable+] clause+ ]"
+
+
+def test_or_clause_or_only():
+    clause = clj.str2edn('(or)')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Cannot parse 'or' clause, expected [ src-var? 'or' clause+ ]"
+
+
+def test_or_clause_or_join_y_or_join():
+    clause = clj.str2edn('(or-join [?y] (or-join [?x] [?x :follows ?y]))')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_clause(clause)
+    assert str(excinfo.value) == "Join variable not declared inside clauses: [Symbol(?y)]"
