@@ -182,7 +182,7 @@ def parse_rule_vars(form):
 # bind-rel       = [ [ (binding | '_')+ ] ]
 
 
-class BindIgnore(collections.namedtuple('BindIgnore', []), clj.MetaMixin):
+class BindIgnore(collections.namedtuple('BindIgnore', ['unused_placeholder']), clj.MetaMixin):
     pass
 
 
@@ -200,7 +200,7 @@ class BindColl(collections.namedtuple('BindColl', ['binding']), clj.MetaMixin):
 
 def parse_bind_ignore(form):
     if S('_') == form:
-        return with_source(BindIgnore(), form)
+        return with_source(BindIgnore(None), form)
 
 
 def parse_bind_scalar(form):
