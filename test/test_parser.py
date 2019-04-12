@@ -82,3 +82,19 @@ def test_in_x_key():
     with pytest.raises(AssertionError) as excinfo:
         dp.parse_in(clause)
     assert str(excinfo.value) == "Cannot parse binding, expected (bind-scalar | bind-tuple | bind-coll | bind-rel)"
+
+
+# deftest with
+
+
+def test_with_x_y():
+    assert dp.parse_with(clj.str2edn('[?x ?y]')) \
+        == [dp.Variable(clj.S('?x')),
+            dp.Variable(clj.S('?y'))]
+
+
+def test_with_x__():
+    clause = clj.str2edn('[?x _]')
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_with(clause)
+    assert str(excinfo.value) == "Cannot parse :with clause, expected [ variable+ ]"
