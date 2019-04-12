@@ -510,12 +510,12 @@ def parse_not_join(form):
 
 
 def validate_or(clause, form):
-    required = clause["rule_vars"]["required"]
-    free = clause["rule_vars"]["free"]
-    clauses = clause["clauses"]
-    vars_ = required + free
     for clause in clauses:
         _validate_join_vars(vars_, [clause], form)
+    required = clause.rule_vars.required
+    free = clause.rule_vars.free
+    clauses = clause.clauses
+    vars_ = clj.concat(required, free)
     return clause
 
 
