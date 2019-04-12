@@ -146,6 +146,11 @@ def parse_plain_symbol(form):
         return PlainSymbol(form)
 
 
+def parse_plain_variable(form):
+    if parse_plain_symbol(form) is not None:
+        return Variable(form)
+
+
 # fn-arg = (variable | constant | src-var)
 
 def parse_fn_arg(form):
@@ -313,7 +318,7 @@ def parse_find_tuple(form):
             return FindTuple(element)
 
 
-def parse_find(form: [S]):
+def parse_find(form):
     result = \
         parse_find_rel(form) or \
         parse_find_coll(form) or \
@@ -323,12 +328,28 @@ def parse_find(form: [S]):
     return result
 
 
-def parse_with(qwith):
-    pass
+def parse_with(form):
+    result = parse_seq(parse_variable, form)
+    assert result is not None, "Cannot parse :with clause, expected [ variable+ ]"
+    return result
 
 
-def parse_in(qin):
-    pass
+def _parse_in_binding(form):
+    var = parse_src_var(form) or \
+        parse_rules_var(form) or \
+        parse_plain_variable(form)
+    if var is not None:
+        return with_source(BindScalar(var), form)
+    else:
+        return parse_binding(form)
+
+
+def parse_in(form):
+    result = parse_seq(_parse_in_binding, form)
+    assert result is not None, \
+        "Cannot parse :in clause, expected " \
+        "(src-var | % | plain-symbol | bind-scalar | bind-tuple | bind-coll | bind-rel)"
+    return result
 
 
 class Pattern(collections.namedtuple('Pattern', ['source', 'pattern']), clj.MetaMixin):

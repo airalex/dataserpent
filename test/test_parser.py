@@ -51,3 +51,10 @@ def test_bindings_vec_vec_a_b_c():
             dp.BindTuple([dp.BindScalar(dp.Variable(clj.S('?a'))),
                           dp.BindScalar(dp.Variable(clj.S('?b'))),
                           dp.BindScalar(dp.Variable(clj.S('?c')))]))
+
+
+# deftest in
+
+def test_in_x():
+    assert dp.parse_in(clj.str2edn('[?x]')) \
+        == [dp.BindScalar(dp.Variable(clj.S('?x')))]
