@@ -145,3 +145,43 @@ def test_not_clause_not_e_follows_x_only():
                       [dp.Pattern(dp.DefaultSrc(None),
                                   [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))])])
     assert dp.parse_clause(clause) == expected
+
+
+def test_not_clause_not_e_follows_x_x_y():
+    clause = clj.str2edn('(not [?e :follows ?x] [?x _ ?y])')
+    expected = dp.Not(dp.DefaultSrc(None),
+                      [dp.Variable(clj.S('?e')), dp.Variable(clj.S('?x')), dp.Variable(clj.S('?y'))],
+                      [dp.Pattern(dp.DefaultSrc(None),
+                                  [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))]),
+                       dp.Pattern(dp.DefaultSrc(None),
+                                  [dp.Variable(clj.S('?x')), dp.Placeholder(None), dp.Variable(clj.S('?y'))])])
+    assert dp.parse_clause(clause) == expected
+
+
+def test_not_clause_1_not_x():
+    clause = clj.str2edn('($1 not [?x])')
+    expected = dp.Not(dp.SrcVar(clj.S('$1')),
+                      [dp.Variable(clj.S('?x'))],
+                      [dp.Pattern(dp.DefaultSrc(None),
+                                  [dp.Variable(clj.S('?x'))])])
+    assert dp.parse_clause(clause) == expected
+
+
+def test_not_clause_not_join_e_y():
+    clause = clj.str2edn('(not-join [?e ?y] [?e :follows ?x] [?x _ ?y])')
+    expected = dp.Not(dp.DefaultSrc(None),
+                      [dp.Variable(clj.S('?e')), dp.Variable(clj.S('?y'))],
+                      [dp.Pattern(dp.DefaultSrc(None),
+                                  [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))]),
+                       dp.Pattern(dp.DefaultSrc(None),
+                                  [dp.Variable(clj.S('?x')), dp.Placeholder(None), dp.Variable(clj.S('?y'))])])
+    assert dp.parse_clause(clause) == expected
+
+
+def test_not_clause_1_not_join_e():
+    clause = clj.str2edn('($1 not-join [?e] [?e :follows ?x])')
+    expected = dp.Not(dp.SrcVar(clj.S('$1')),
+                      [dp.Variable(clj.S('?e'))],
+                      [dp.Pattern(dp.DefaultSrc(None),
+                                  [dp.Variable(clj.S('?e')), dp.Constant(clj.K('follows')), dp.Variable(clj.S('?x'))])])
+    assert dp.parse_clause(clause) == expected
