@@ -452,7 +452,14 @@ def _collect_vars(form):
 
 
 def collect_vars_distinct(form):
-    return list(set(_collect_vars(form)))
+    # We cannot use simple list(set(...)), because the order is non-deterministic between interpreter runs
+    # (see https://stackoverflow.com/a/21919429/6093101).
+    # We can't use sorted(set(...)) either, as the elements aren't always comparable given current implementation
+    # of Symbol and Keyword.
+    # The hack is to use dict as the insertion order is preserved in Python >=3.7.
+    collected = _collect_vars(form)
+    collected_dict = {v: None for v in collected}
+    return list(collected_dict.keys())
 
 
 def _validate_join_vars(vars_, clauses, form):
@@ -566,6 +573,7 @@ def parse_clause(form):
         parse_fn(form) or \
         parse_rule_expr(form) or \
         parse_pattern(form)
+
     assert result is not None, \
         'Cannot parse clause, expected' + \
         ' (data-pattern | pred-expr | fn-expr | rule-expr | not-clause | not-join-clause | or-clause | or-join-clause)'

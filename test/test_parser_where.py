@@ -138,7 +138,7 @@ def test_rule_expr_friends_something():
 
 # deftest not-clause
 
-def test_not_clause_not_e_follows_x():
+def test_not_clause_not_e_follows_x_only():
     clause = clj.str2edn('(not [?e :follows ?x])')
     expected = dp.Not(dp.DefaultSrc(None),
                       [dp.Variable(clj.S('?e')), dp.Variable(clj.S('?x'))],

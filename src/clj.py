@@ -117,4 +117,4 @@ def reduce(f, val, coll):
 
 
 def conj(coll, x):
-    return [x] + coll
+    return coll + [x]
