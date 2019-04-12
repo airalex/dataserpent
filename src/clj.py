@@ -5,6 +5,8 @@ import functools
 
 import edn_format as edn
 import toolz.itertoolz as tzi
+import toolz.functoolz as tzf
+import toolz.curried as tzc
 
 
 """Port of data structures and predicates from Clojure.
@@ -78,7 +80,11 @@ def some_fn(*fns):
     assert len(fns) == 2, 'some_fn is temporarily defined only for two fns'
 
     def _some(*args):
-        return fns[0](args) or fns[1](args)
+        for arg in args:
+            for fn in fns:
+                result = fn(arg)
+                if result is not False and result is not None:
+                    return result
 
     return _some
 
@@ -118,3 +124,10 @@ def reduce(f, val, coll):
 
 def conj(coll, x):
     return coll + [x]
+
+
+def concat(*seqs):
+    return tzf.thread_last(seqs,
+                           tzc.map(lambda s: s or []),
+                           tzi.concat,
+                           list)
