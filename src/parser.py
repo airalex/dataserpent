@@ -465,7 +465,7 @@ def collect_vars_distinct(form):
 def _validate_join_vars(vars_, clauses, form):
     undeclared = set(vars_).difference(set(_collect_vars(clauses)))
     if not clj.is_empty(undeclared):
-        assert False, "Join variable not declared inside clauses: " + clj.mapv(lambda v: v.symbol, undeclared)
+        assert False, "Join variable not declared inside clauses: " + repr(clj.mapv(lambda v: v.symbol, undeclared))
 
     if clj.is_empty(vars_):
         assert False, "Join variables should not be empty"
