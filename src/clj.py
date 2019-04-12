@@ -48,7 +48,7 @@ def satisfies(protocol, x):
 
 
 def next_(seq):
-    return list(tzi.drop(1, seq))
+    return list(tzi.drop(1, seq)) or None
 
 
 def get(seq, ind, default=None):

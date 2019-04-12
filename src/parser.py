@@ -160,8 +160,8 @@ class RuleVars(collections.namedtuple('RuleVars', ['required', 'free']), clj.Met
 
 def parse_rule_vars(form):
     if clj.is_sequential(form):
-        if clj.is_sequential(clj.get(form, 0)):
-            required = clj.get(form, 0)
+        if clj.is_sequential(clj.first(form)):
+            required = clj.first(form)
             rest = clj.next_(form)
         else:
             required = None
