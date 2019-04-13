@@ -43,6 +43,14 @@ def is_sequential(obj) -> bool:
     return isinstance(obj, collections.abc.Sequence)
 
 
+def is_seq(obj):
+    return is_sequential(obj)
+
+
+def is_nil(obj):
+    return (obj is None)
+
+
 def is_map(obj):
     return isinstance(obj, t.Mapping)
 

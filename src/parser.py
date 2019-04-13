@@ -4,12 +4,12 @@ import collections
 import collections.abc
 import abc
 
-import toolz.itertoolz as tzi
 import toolz.dicttoolz as tzd
 import toolz.functoolz as tzf
 
 import src.clj as clj
 from src.clj import K, S
+import src.db as db
 
 
 # implementation based on
@@ -17,16 +17,16 @@ from src.clj import K, S
 
 
 class ITraversable(abc.ABC):
+    @abc.abstractmethod
     def _collect(self, pred, acc):
-        # TODO
         pass
 
+    @abc.abstractmethod
     def _collect_vars(self, acc):
-        # TODO
         pass
 
+    @abc.abstractmethod
     def _postwalk(self, f):
-        # TODO
         pass
 
 
@@ -72,14 +72,14 @@ def validate_query(q: Query, form):
         in_vars = _collect_vars(q.qin)
         in_sources = collect(lambda e: isinstance(e, SrcVar), q.qin)
         in_rules = collect(lambda e: isinstance(e, RulesVar), q.qin)
-        if not (is_distinct(in_vars) and \
-                is_distinct(in_sources) and \
+        if not (is_distinct(in_vars) and
+                is_distinct(in_sources) and
                 is_distinct(in_rules)):
             assert False, "Vars used in :in should be distinct"
     _validate_distinct_in()
 
     def _validate_distinct_with():
-        with_vars = collect_vars(q.qwith)
+        with_vars = _collect_vars(q.qwith)
         if not is_distinct(with_vars):
             assert False, "Vars used in :with should be distinct"
     _validate_distinct_with()
@@ -114,6 +114,19 @@ def parse_seq(parse_el, form):
             else:
                 acc = None
                 break
+        return acc
+
+
+def collect(pred, form, acc=[]):
+    if pred(form):
+        return clj.conj(acc, form)
+    elif clj.satisfies(ITraversable, form):
+        return form._collect(pred, acc)
+    elif db.is_seqable(form):
+        return clj.reduce(lambda acc, form: collect(pred, form, acc),
+                          acc,
+                          form)
+    else:
         return acc
 
 
