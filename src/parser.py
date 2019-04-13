@@ -30,26 +30,72 @@ class ITraversable(abc.ABC):
         pass
 
 
+class Query(collections.namedtuple('Query', ['qfind', 'qwith', 'qin', 'qwhere']), clj.MetaMixin):
+    pass
+
+
 def query2map(query: list) -> dict:
     def _loop(parsed: dict, key, qs: list):
-        q = clj.get(qs, 0)
+        q = clj.first(qs)
         if q is not None:
             if clj.is_keyword(q):
-                return _loop(parsed,
-                             q,
-                             list(tzi.drop(1, qs)))
+                return _loop(parsed, q, clj.next_(qs))
             else:
-                return _loop(tzd.update_in(parsed, [key], lambda prev: prev + q if prev else [q]),
+                return _loop(tzd.update_in(parsed, [key.name], lambda prev: prev + q if prev else [q]),
                              key,
-                             list(tzi.drop(1, qs)))
+                             clj.next_(qs))
         else:
             return parsed
 
     return _loop({}, None, query)
 
 
-class Query(collections.namedtuple('Query', ['qfind', 'qwith', 'qin', 'qwhere']), clj.MetaMixin):
-    pass
+def validate_query(q: Query, form):
+    def _validate_unknown_shared():
+        find_vars = clj.set_(_collect_vars(q.qfind))
+        with_vars = clj.set_(q.qwith)
+        in_vars = clj.set_(_collect_vars(q.qin))
+        where_vars = clj.set_(_collect_vars(q.qwhere))
+        unknown = find_vars.union(with_vars).difference(where_vars.union(in_vars))
+        shared = find_vars.intersection(with_vars)
+
+        if not clj.is_empty(unknown):
+            assert False, "Query for unknown vars: {}".format([v.symbol for v in unknown])
+
+        if not clj.is_empty(shared):
+            assert False, ":find and :with should not use same variables: {}".format([v.symbol for v in shared])
+    _validate_unknown_shared()
+
+    def _validate_distinct_in():
+        in_vars = _collect_vars(q.qin)
+        in_sources = collect(lambda e: isinstance(e, SrcVar), q.qin)
+        in_rules = collect(lambda e: isinstance(e, RulesVar), q.qin)
+        if not (is_distinct(in_vars) and \
+                is_distinct(in_sources) and \
+                is_distinct(in_rules)):
+            assert False, "Vars used in :in should be distinct"
+    _validate_distinct_in()
+
+    def _validate_distinct_with():
+        with_vars = collect_vars(q.qwith)
+        if not is_distinct(with_vars):
+            assert False, "Vars used in :with should be distinct"
+    _validate_distinct_with()
+
+    def _validate_sources():
+        in_sources = collect(lambda e: isinstance(e, SrcVar), q.qin, set())
+        where_sources = collect(lambda e: isinstance(e, SrcVar), q.qwhere, set())
+        unknown = where_sources.difference(in_sources)
+        if not clj.is_empty(unknown):
+            assert False, "Where uses unknown source vars: {}".format([v.symbol for v in unknown])
+    _validate_sources()
+
+    def _validate_rules_vars():
+        rule_exprs = collect(lambda e: isinstance(e, RuleExpr), q.qwhere)
+        rules_vars = collect(lambda e: isinstance(e, RulesVar), q.qin)
+        if (not clj.is_empty(rule_exprs)) and clj.is_empty(rules_vars):
+            assert False, "Missing rules var '%' in :in"
+    _validate_rules_vars()
 
 
 def is_of_size(form, size):
@@ -649,19 +695,24 @@ def parse_where(qwhere: [[t.Union[S, K]]]):
     pass
 
 
-def parse_query(query: t.Union[list, dict]):
-    qm = query2map(query)
-
-    qfind = parse_find(qm[K('find')])
-    if K('with') in qm:
-        qwith = parse_with(qm[K('with')])
+def parse_query(q: t.Union[list, dict]):
+    if clj.is_map(q):
+        qm = q
+    elif clj.is_sequential(q):
+        qm = query2map(q)
     else:
-        qwith = None
-    qin = parse_in(qm.get(K('in'), [S('$')]))
-    qwhere = parse_where(qm.get(K('where'), []))
+        assert False, "Query should be a vector or a map"
 
-    res = Query(qfind, qwith, qin, qwhere)
+    if qm.get('with') is not None:
+        with_ = parse_with(qm['with'])
+    else:
+        with_ = None
 
+    res = Query(qfind=parse_find(qm['find']),
+                qwith=with_,
+                qin=parse_in(clj.get(qm, 'in', [clj.S('$')])),
+                qwhere=parse_where(clj.get(qm, 'where', [])))
+    validate_query(res, q)
     return res
 
 

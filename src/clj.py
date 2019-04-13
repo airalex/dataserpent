@@ -43,6 +43,10 @@ def is_sequential(obj) -> bool:
     return isinstance(obj, collections.abc.Sequence)
 
 
+def is_map(obj):
+    return isinstance(obj, t.Mapping)
+
+
 def satisfies(protocol, x):
     return isinstance(x, protocol)
 
@@ -131,3 +135,6 @@ def concat(*seqs):
                            tzc.map(lambda s: s or []),
                            tzi.concat,
                            list)
+
+def set_(seq):
+    return set(seq or [])
