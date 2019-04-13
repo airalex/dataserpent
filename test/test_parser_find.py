@@ -84,5 +84,12 @@ def test_parse_custom_agg_f_a_b():
                                       [dp.Variable(clj.S('?a'))]),
                          dp.Variable(clj.S('?b'))])
 
-# TODO
-# test-parse-find-elements
+
+# deftest test-parse-find-element
+
+def test_parse_find_elems_count_b_1_x_dot():
+    assert dp.parse_find(clj.str2edn('[(count ?b 1 $x) .]')) \
+        == dp.FindScalar(dp.Aggregate(dp.PlainSymbol(clj.S('count')),
+                                      [dp.Variable(clj.S('?b')),
+                                       dp.Constant(1),
+                                       dp.SrcVar(clj.S('$x'))]))
