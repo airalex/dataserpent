@@ -23,8 +23,16 @@ def test_parse_find_tuple():
     assert dp.parse_find(clj.str2edn('[[?a ?b]]')) \
         == dp.FindTuple([dp.Variable(clj.S('?a')), dp.Variable((clj.S('?b')))])
 
-# TODO
-# test-parse-aggregate
+
+# deftest test-parse-aggregate
+
+def test_parse_aggregate_a_count_b():
+    assert dp.parse_find(clj.str2edn('[?a (count ?b)]')) \
+        == dp.FindRel([dp.Variable(clj.S('?a')),
+                       dp.Aggregate(dp.PlainSymbol(clj.S('count')),
+                                    [dp.Variable(clj.S('?b'))])])
+
+
 
 # TODO
 # test-parse-custom-aggregates

@@ -52,10 +52,6 @@ class Query(collections.namedtuple('Query', ['qfind', 'qwith', 'qin', 'qwhere'])
     pass
 
 
-class FindRel(collections.namedtuple('FindRel', ['elements']), clj.MetaMixin):
-    pass
-
-
 def is_of_size(form, size):
     return clj.is_sequential(form) and len(form) == size
 
@@ -253,19 +249,77 @@ def parse_binding(form):
     return result
 
 
-def parse_pull_expr(form):
-    # Not implemented yet
+class Aggregate(collections.namedtuple('Aggregate', ['fn', 'args']), clj.MetaMixin):
     pass
 
 
-def parse_aggregate_custom(form):
-    # Not implemented yet
+class Pull(collections.namedtuple('Pull', ['source', 'variable', 'pattern']), clj.MetaMixin):
+    pass
+
+
+class FindRel(collections.namedtuple('FindRel', ['elements']), clj.MetaMixin):
+    pass
+
+
+class FindColl(collections.namedtuple('FindColl', ['element']), clj.MetaMixin):
+    pass
+
+
+class FindScalar(collections.namedtuple('FindScalar', ['element']), clj.MetaMixin):
+    pass
+
+
+class FindTuple(collections.namedtuple('FindTuple', ['element']), clj.MetaMixin):
     pass
 
 
 def parse_aggregate(form):
-    # Not implemented yet
-    pass
+    if clj.is_sequential(form) and (len(form) >= 2):
+        fn, args = clj.extract_seq(form, 1)
+        fn_star = parse_plain_symbol(fn)
+        args_star = parse_seq(parse_fn_arg, args)
+        if fn_star is not None and args_star is not None:
+            return Aggregate(fn_star, args_star)
+
+
+def parse_aggregate_custom(form):
+    if clj.is_sequential(form) and clj.first(form) == clj.S('aggregate'):
+        if len(form) >= 3:
+            _, fn, args = clj.extract_seq(form, 2)
+            fn_star = parse_variable(fn)
+            args_star = parse_seq(parse_fn_arg, args)
+            if fn_star is not None and args_star is not None:
+                return Aggregate(fn_star, args_star)
+            else:
+                assert False, "Cannot parse custom aggregate call, expect ['aggregate' variable fn-arg+]"
+        else:
+            assert False, "Cannot parse custom aggregate call, expect ['aggregate' variable fn-arg+]"
+
+
+def parse_pull_expr(form):
+    if clj.is_sequential(form) and clj.first(form) == clj.S('pull'):
+        if 3 <= len(form) <= 4:
+            is_long = (len(form) == 4)
+            if is_long:
+                src = form[1]
+                var, pattern = clj.nnext(form)
+            else:
+                src = clj.S('$')
+                var, pattern = clj.next_(form)
+            src_star = parse_src_var(src)
+            var_star = parse_variable(var)
+            pattern_star = parse_variable(pattern) or \
+                parse_plain_variable(pattern) or \
+                parse_constant(pattern)
+
+            if src_star and var_star and pattern_star:
+                return Pull(src_star, var_star, pattern_star)
+            else:
+                assert False, "Cannot parse pull expression, expect" \
+                    "['pull' src-var? variable (constant | variable | plain-symbol)]"
+        else:
+            assert False, "Cannot parse pull expression, expect ['pull' src-var? variable" \
+                "(constant | variable | plain-symbol)]"
 
 
 def parse_find_elem(form):
@@ -280,18 +334,6 @@ def parse_find_rel(form):
     elements = parse_seq(parse_find_elem, form)
     if elements is not None:
         return FindRel(elements)
-
-
-class FindColl(collections.namedtuple('FindColl', ['element']), clj.MetaMixin):
-    pass
-
-
-class FindScalar(collections.namedtuple('FindScalar', ['element']), clj.MetaMixin):
-    pass
-
-
-class FindTuple(collections.namedtuple('FindTuple', ['element']), clj.MetaMixin):
-    pass
 
 
 def parse_find_coll(form):
