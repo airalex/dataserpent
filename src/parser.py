@@ -41,7 +41,9 @@ def query2map(query: list) -> dict:
             if clj.is_keyword(q):
                 return _loop(parsed, q, clj.next_(qs))
             else:
-                return _loop(tzd.update_in(parsed, [key.name], lambda prev: prev + q if prev else [q]),
+                return _loop(tzd.update_in(parsed,
+                                           [key.name],
+                                           clj.fnil(lambda l: clj.conj(l, q), [])),
                              key,
                              clj.next_(qs))
         else:
@@ -691,8 +693,10 @@ def parse_clauses(clauses):
     return parse_seq(parse_clause, clauses)
 
 
-def parse_where(qwhere: [[t.Union[S, K]]]):
-    pass
+def parse_where(form):
+    result = parse_clauses(form)
+    assert result is not None, "Cannot parse :where clause, expected [clause+]"
+    return result
 
 
 def parse_query(q: t.Union[list, dict]):

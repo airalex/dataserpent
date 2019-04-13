@@ -138,3 +138,14 @@ def concat(*seqs):
 
 def set_(seq):
     return set(seq or [])
+
+
+def fnil(f, x):
+    def _patched(*args):
+        a, *args_rest = args
+        if a is None:
+            called_args = [x] + args_rest
+            return f(*called_args)
+        else:
+            return f(*args)
+    return _patched
