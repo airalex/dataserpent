@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "fb6a04c76d4c347a0683bb10189271f5ccc6349fa130d5e37e2474e6a713c75b"
+            "sha256": "e600d8a2a312104a6a70a0f2663f3ccf256c045ab0f5e437654e04f16aba23d6"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -190,15 +190,6 @@
             ],
             "version": "==2019.1"
         },
-        "rope": {
-            "hashes": [
-                "sha256:6b728fdc3e98a83446c27a91fc5d56808a004f8beab7a31ab1d7224cecc7d969",
-                "sha256:c5c5a6a87f7b1a2095fb311135e2a3d1f194f5ecb96900fdd0a9100881f48aaf",
-                "sha256:f0dcf719b63200d492b85535ebe5ea9b29e0d0b8aebeb87fe03fc1a65924fdaf"
-            ],
-            "index": "pypi",
-            "version": "==0.14.0"
-        },
         "six": {
             "hashes": [
                 "sha256:3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c",
@@ -226,6 +217,14 @@
                 "sha256:f4ebe71925af7b40a864553f761ed559b43544f8f71746c2d756c7fe788ade7c"
             ],
             "version": "==0.1.7"
+        },
+        "yapf": {
+            "hashes": [
+                "sha256:34f6f80c446dcb2c44bd644c4037a2024b6645e293a4c9c4521983dd0bb247a1",
+                "sha256:613deba14233623ff3432d9d5032631b5f600be97b39f66932cbe67648bfa8ea"
+            ],
+            "index": "pypi",
+            "version": "==0.27.0"
         }
     },
     "develop": {
@@ -245,12 +244,12 @@
         },
         "hypothesis": {
             "hashes": [
-                "sha256:2b6e270c7d96c88f54c8a12d9ab9dc802fb7a4e44f2ccc94ac1bddf0df1533b7",
-                "sha256:419ac5be1fa083eeb0a0a7d393e0b722dd246bdb44d91e9bec4bfd0a6b4680dd",
-                "sha256:44f6a0285e18ad42aba341c846a92e2d68cb2ac1ff0bff7cb08c64e0afdac725"
+                "sha256:401b7731775ea869e12ada6e02736e269a1c30abae458122d130a05891178f2e",
+                "sha256:b03f14c0be8545a9722216a61ea09ea3460df1d1aae6f2e2b967e742d4c91e6d",
+                "sha256:b27ba950ca8edaaf42ea66ce91120f6032d3c1aa2ca0a74fe534c47d2282c73e"
             ],
             "index": "pypi",
-            "version": "==4.15.0"
+            "version": "==4.16.0"
         },
         "more-itertools": {
             "hashes": [
