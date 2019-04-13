@@ -13,7 +13,12 @@ import src.clj as clj
                                    ('[:find ?x ?e :with ?y ?e :where [?x ?e ?y]]',
                                     ":find and :with should not use same variables: [Symbol(?e)]"),
                                    ('[:find ?e :in $ $ ?x :where [?e]]',
-                                    "Vars used in :in should be distinct")])
+                                    "Vars used in :in should be distinct"),
+                                   ('[:find ?e :in ?x $ ?x :where [?e]]',
+                                    "Vars used in :in should be distinct"),
+                                   ('[:find ?e :in $ % ?x % :where [?e]]',
+                                    "Vars used in :in should be distinct")
+])
 def test_validation(q, msg):
     query = clj.str2edn(q)
     with pytest.raises(AssertionError) as excinfo:

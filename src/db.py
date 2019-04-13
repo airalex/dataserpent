@@ -5,5 +5,5 @@ def is_seqable(x):
     if isinstance(x, str):
         return False
 
-    return (clj.is_seq(x) or
-            clj.is_nil(x))
+    # is_nil() isn't included here, as Python generally doesn't allow iterating over None
+    return clj.is_seq(x)
