@@ -51,8 +51,38 @@ def test_parse_aggregate_count_a_b():
                          dp.Variable(clj.S('?b'))])
 
 
-# TODO
-# test-parse-custom-aggregates
+# deftest test-parse-custom-aggregates
+
+def test_parse_custom_agg_f_a():
+    assert dp.parse_find(clj.str2edn('[(aggregate ?f ?a)]')) \
+        == dp.FindRel([dp.Aggregate(dp.Variable(clj.S('?f')),
+                                    [dp.Variable(clj.S('?a'))])])
+
+
+def test_parse_custom_a_agg_f_b():
+    assert dp.parse_find(clj.str2edn('[?a (aggregate ?f ?b)]')) \
+        == dp.FindRel([dp.Variable(clj.S('?a')),
+                       dp.Aggregate(dp.Variable(clj.S('?f')),
+                                    [dp.Variable(clj.S('?b'))])])
+
+
+def test_parse_custom_agg_f_a_ellipsis():
+    assert dp.parse_find(clj.str2edn('[[(aggregate ?f ?a) ...]]')) \
+        == dp.FindColl(dp.Aggregate(dp.Variable(clj.S('?f')),
+                                    [dp.Variable(clj.S('?a'))]))
+
+
+def test_parse_custom_agg_f_a_dot():
+    assert dp.parse_find(clj.str2edn('[(aggregate ?f ?a) .]')) \
+        == dp.FindScalar(dp.Aggregate(dp.Variable(clj.S('?f')),
+                                      [dp.Variable(clj.S('?a'))]))
+
+
+def test_parse_custom_agg_f_a_b():
+    assert dp.parse_find(clj.str2edn('[[(aggregate ?f ?a) ?b]]')) \
+        == dp.FindTuple([dp.Aggregate(dp.Variable(clj.S('?f')),
+                                      [dp.Variable(clj.S('?a'))]),
+                         dp.Variable(clj.S('?b'))])
 
 # TODO
 # test-parse-find-elements
