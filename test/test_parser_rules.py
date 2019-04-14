@@ -63,3 +63,34 @@ def test_rule_vars_invalid(edn, msg):
     with pytest.raises(AssertionError) as excinfo:
         dp.parse_rules(form)
     assert msg in str(excinfo.value)
+
+
+# deftest branches
+
+@pytest.mark.parametrize('edn,expected',
+                         [('[[(rule ?x) [:a] [:b]] [(rule ?x) [:c]]]',
+                           [dp.Rule(
+                               dp.PlainSymbol(clj.S('rule')),
+                               [dp.RuleBranch(
+                                   dp.RuleVars(None, [dp.Variable(clj.S('?x'))]),
+                                   [dp.Pattern(dp.DefaultSrc(None), [dp.Constant(clj.K('a'))]),
+                                    dp.Pattern(dp.DefaultSrc(None), [dp.Constant(clj.K('b'))])]),
+                                dp.RuleBranch(
+                                    dp.RuleVars(None, [dp.Variable(clj.S('?x'))]),
+                                    [dp.Pattern(dp.DefaultSrc(None), [dp.Constant(clj.K('c'))])])])]),
+                          ('[[(rule ?x) [:a] [:b]] [(other ?x) [:c]]]',
+                           [dp.Rule(
+                               dp.PlainSymbol(clj.S('rule')),
+                               [dp.RuleBranch(
+                                   dp.RuleVars(None, [dp.Variable(clj.S('?x'))]),
+                                   [dp.Pattern(dp.DefaultSrc(None), [dp.Constant(clj.K('a'))]),
+                                    dp.Pattern(dp.DefaultSrc(None), [dp.Constant(clj.K('b'))])])]),
+                            dp.Rule(
+                                dp.PlainSymbol(clj.S('other')),
+                                [dp.RuleBranch(
+                                    dp.RuleVars(None, [dp.Variable(clj.S('?x'))]),
+                                    [dp.Pattern(dp.DefaultSrc(None), [dp.Constant(clj.K('c'))])])])])])
+def test_branches_valid(edn, expected):
+    form = clj.str2edn(edn)
+    result = dp.parse_rules(form)
+    assert result == expected
