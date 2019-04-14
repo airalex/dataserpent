@@ -10,7 +10,7 @@ import toolz.functoolz as tzf
 
 import src.clj as clj
 from src.clj import K, S
-import src.db as db
+import src.datascript.db as db
 
 
 # implementation based on

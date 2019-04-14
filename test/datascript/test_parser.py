@@ -1,6 +1,6 @@
 import pytest
 
-import src.parser as dp
+import src.datascript.parser as dp
 import src.clj as clj
 
 
