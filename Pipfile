@@ -18,6 +18,8 @@ ipython = "*"
 ipdb = "*"
 edn-format = "*"
 yapf = "*"
+sortedcontainers = "*"
+atomos = "*"
 
 [requires]
 python_version = "3.7"

@@ -5,8 +5,10 @@ import functools
 
 import edn_format as edn
 import toolz.itertoolz as tzi
+import toolz.dicttoolz as tzd
 import toolz.functoolz as tzf
 import toolz.curried as tzc
+import atomos.atom
 
 
 """Port of data structures and predicates from Clojure.
@@ -138,7 +140,7 @@ def first(seq):
 
 def reduce(f, val, coll):
     # note the argument ordering
-    return functools.reduce(f, coll, val)
+    return functools.reduce(f, liberal_iter(coll), val)
 
 
 def conj(coll, x):
@@ -175,4 +177,16 @@ def count(seq):
 
 
 def liberal_iter(seq_or_nil):
+    if isinstance(seq_or_nil, t.Mapping):
+        return seq_or_nil.items()
+
     return iter(seq_or_nil or [])
+
+
+def merge(*maps):
+    sanitized = [m for m in maps if not is_nil(m)]
+    return tzd.merge(*sanitized)
+
+
+def atom(x):
+    return atomos.atom.Atom(x)
