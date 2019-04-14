@@ -17,8 +17,15 @@ import src.clj as clj
                                    ('[:find ?e :in ?x $ ?x :where [?e]]',
                                     "Vars used in :in should be distinct"),
                                    ('[:find ?e :in $ % ?x % :where [?e]]',
-                                    "Vars used in :in should be distinct")
-])
+                                    "Vars used in :in should be distinct"),
+                                   ('[:find ?n :with ?e ?f ?e :where [?e ?f ?n]]',
+                                    "Vars used in :with should be distinct"),
+                                   ('[:find ?x :where [$1 ?x]]',
+                                    "Where uses unknown source vars: [Symbol($1)]"),
+                                   ('[:find ?x :in $1 :where [$2 ?x]]',
+                                    "Where uses unknown source vars: [Symbol($2)]"),
+                                   ('[:find ?e :where (rule ?e)]',
+                                    "Missing rules var '%' in :in")])
 def test_validation(q, msg):
     query = clj.str2edn(q)
     with pytest.raises(AssertionError) as excinfo:
