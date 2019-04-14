@@ -51,3 +51,15 @@ def test_rule_vars_valid(form_edn, expected):
     form = clj.str2edn(form_edn)
     result = dp.parse_rules(form)
     assert result == expected
+
+
+@pytest.mark.parametrize('edn,msg',
+                         [('[[(rule) [_]]]', "Cannot parse rule-vars"),
+                          ('[[(rule []) [_]]]', "Cannot parse rule-vars"),
+                          ('[[(rule ?x ?y ?x) [_]]]', "Rule variables should be distinct"),
+                          ('[[(rule [?x ?y] ?z ?x) [_]]]', "Rule variables should be distinct")])
+def test_rule_vars_invalid(edn, msg):
+    form = clj.str2edn(edn)
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_rules(form)
+    assert msg in str(excinfo.value)
