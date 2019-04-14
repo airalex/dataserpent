@@ -4,6 +4,7 @@ import collections
 import collections.abc
 import abc
 
+import toolz.itertoolz as tzi
 import toolz.dicttoolz as tzd
 import toolz.functoolz as tzf
 
@@ -28,6 +29,26 @@ class ITraversable(abc.ABC):
     @abc.abstractmethod
     def _postwalk(self, f):
         pass
+
+
+def validate_arity(name, branches):
+    vars0 = clj.first(branches).vars_
+    arity0 = rule_vars_arity(vars0)
+    for b in clj.next_(branches) or []:
+        vars_ = b.vars_
+        if not arity0 == rule_vars_arity(vars_):
+            assert False, "Arity mismatch for rule {}: {} vs. {}'".format(name.symbol,
+                                                                          flatten_rule_vars(vars0),
+                                                                          flatten_rule_vars(vars_))
+
+
+def parse_rules(form):
+    rules = []
+    for name, branches in tzi.groupby(lambda n: n['name'], parse_seq(parse_rule, form)).items():
+        branches_star = [RuleBranch(b['vars'], b['clauses']) for b in branches]
+        validate_arity(name, branches_star)
+        rules.append(Rule(name, branches_star))
+    return rules
 
 
 class Query(collections.namedtuple('Query', ['qfind', 'qwith', 'qin', 'qwhere']), clj.MetaMixin):
@@ -236,6 +257,19 @@ def parse_rule_vars(form):
             assert False, "Rule variables should be distinct"
         return RuleVars(required_star, free_star)
     assert False, "Cannot parse rule-vars, expected [ variable+ | ([ variable+ ] variable*) ]"
+
+
+def flatten_rule_vars(rule_vars):
+    if rule_vars.required is not None:
+        req_symbols = [[v.symbol for v in rule_vars.required]]
+    else:
+        req_symbols = None
+    return clj.concat(req_symbols, [v.symbol for v in rule_vars.free])
+
+
+def rule_vars_arity(rule_vars):
+    return clj.count(rule_vars.required), clj.count(rule_vars.free)
+
 
 # binding        = (bind-scalar | bind-tuple | bind-coll | bind-rel)
 # bind-scalar    = variable
@@ -710,6 +744,43 @@ def parse_where(form):
     result = parse_clauses(form)
     assert result is not None, "Cannot parse :where clause, expected [clause+]"
     return result
+
+
+class RuleBranch(collections.namedtuple('RuleBranch', 'vars_ clauses'), clj.MetaMixin):
+    pass
+
+
+class Rule(collections.namedtuple('Rule', 'name clauses'), clj.MetaMixin):
+    pass
+
+
+def validate_vars(vars_, clauses, form):
+    declared_vars = collect(lambda o: clj.is_instance(Variable, o), vars_, set())
+    used_vars = collect(lambda o: clj.is_instance(Variable, o), clauses, set())
+    undeclared_vars = used_vars.difference(declared_vars)
+    if not clj.is_empty(undeclared_vars):
+        assert False, "Reference to the unknown variables: {}".format([v.symbol for v in undeclared_vars])
+
+
+def parse_rule(form):
+    if clj.is_sequential(form):
+        head, clauses = clj.extract_seq(form, 1)
+        if clj.is_sequential(head):
+            name, vars_ = clj.extract_seq(head, 1)
+            name_star = parse_plain_symbol(name)
+            assert name_star is not None, "Cannot parse rule name, expected plain-symbol"
+            vars_star = parse_rule_vars(vars_)
+            clauses_star = clj.not_empty(parse_clauses(clauses))
+            assert clauses_star is not None, "Rule branch should have clauses"
+
+            validate_vars(vars_star, clauses_star, form)
+            return {'name': name_star,
+                    'vars': vars_star,
+                    'clauses': clauses_star}
+        else:
+            assert False, "Cannot parse rule head, expected [rule-name rule-vars]"
+    else:
+        assert False, "Cannot parse rule, expected [rule-head clause+]"
 
 
 def parse_query(q: t.Union[list, dict]):

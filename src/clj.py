@@ -55,6 +55,10 @@ def is_map(obj):
     return isinstance(obj, t.Mapping)
 
 
+def is_instance(klass, obj):
+    return isinstance(obj, klass)
+
+
 def satisfies(protocol, x):
     return isinstance(x, protocol)
 
@@ -76,7 +80,10 @@ def is_empty(coll):
 
 
 def not_empty(coll):
-    return not is_empty(coll)
+    if coll:
+        return coll
+    else:
+        return None
 
 
 def is_distinct(seq):
@@ -161,3 +168,7 @@ def fnil(f, x):
         else:
             return f(*args)
     return _patched
+
+
+def count(seq):
+    return len(seq or [])
