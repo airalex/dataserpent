@@ -172,3 +172,7 @@ def fnil(f, x):
 
 def count(seq):
     return len(seq or [])
+
+
+def liberal_iter(seq_or_nil):
+    return iter(seq_or_nil or [])

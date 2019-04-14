@@ -264,7 +264,7 @@ def flatten_rule_vars(rule_vars):
         req_symbols = [[v.symbol for v in rule_vars.required]]
     else:
         req_symbols = None
-    return clj.concat(req_symbols, [v.symbol for v in rule_vars.free])
+    return clj.concat(req_symbols, [v.symbol for v in clj.liberal_iter(rule_vars.free)])
 
 
 def rule_vars_arity(rule_vars):
