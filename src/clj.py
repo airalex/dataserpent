@@ -135,7 +135,11 @@ def reduce(f, val, coll):
 
 
 def conj(coll, x):
-    return coll + [x]
+    if coll is None:
+        return [x]
+
+    conjed = list(coll) + [x]
+    return type(coll)(conjed)
 
 
 def concat(*seqs):
