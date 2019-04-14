@@ -94,3 +94,14 @@ def test_branches_valid(edn, expected):
     form = clj.str2edn(edn)
     result = dp.parse_rules(form)
     assert result == expected
+
+
+@pytest.mark.parametrize('edn,msg',
+                         [('[[(rule ?x)]]', "Rule branch should have clauses"),
+                          ('[[(rule ?x) [_]] [(rule ?x ?y) [_]]]', "Arity mismatch"),
+                          ('[[(rule ?x) [_]] [(rule [?x]) [_]]]', "Arity mismatch")])
+def test_branches_invalid(edn, msg):
+    form = clj.str2edn(edn)
+    with pytest.raises(AssertionError) as excinfo:
+        dp.parse_rules(form)
+    assert msg in str(excinfo.value)
