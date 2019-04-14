@@ -190,3 +190,7 @@ def merge(*maps):
 
 def atom(x):
     return atomos.atom.Atom(x)
+
+
+def mapv(f, *colls):
+    return [f(*args) for args in zip(colls)]
