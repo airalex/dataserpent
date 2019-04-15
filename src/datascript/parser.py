@@ -167,7 +167,8 @@ class Placeholder(collections.namedtuple('Placeholder', ['unused_placeholder']),
 
 
 class Variable(collections.namedtuple('Variable', ['symbol']), clj.MetaMixin):
-    pass
+    def _find_vars(self):
+        return [self.symbol]
 
 
 class SrcVar(collections.namedtuple('SrcVar', ['symbol']), clj.MetaMixin):
@@ -345,27 +346,41 @@ def parse_binding(form):
 
 
 class Aggregate(collections.namedtuple('Aggregate', ['fn', 'args']), clj.MetaMixin):
-    pass
+    def _find_vars(self):
+        return clj.last(self.args)._find_vars()
 
 
 class Pull(collections.namedtuple('Pull', ['source', 'variable', 'pattern']), clj.MetaMixin):
-    pass
+    def _find_vars(self):
+        return self.variable._find_vars()
 
 
 class FindRel(collections.namedtuple('FindRel', ['elements']), clj.MetaMixin):
-    pass
+    def find_elements(self):
+        return self.elements
 
 
 class FindColl(collections.namedtuple('FindColl', ['element']), clj.MetaMixin):
-    pass
+    def find_elements(self):
+        return [self.element]
 
 
 class FindScalar(collections.namedtuple('FindScalar', ['element']), clj.MetaMixin):
-    pass
+    def find_elements(self):
+        return [self.element]
 
 
 class FindTuple(collections.namedtuple('FindTuple', ['element']), clj.MetaMixin):
-    pass
+    def find_elements(self):
+        return self.elements
+
+
+def find_vars(find):
+    return clj.mapcat(lambda o: o._find_vars(), find.find_elements())
+
+
+def is_aggregate(element):
+    return clj.is_instance(Aggregate, element)
 
 
 def parse_aggregate(form):

@@ -193,4 +193,29 @@ def atom(x):
 
 
 def mapv(f, *colls):
-    return [f(*args) for args in zip(colls)]
+    iters = [liberal_iter(c) for c in colls]
+    return [f(*args) for args in zip(*iters)]
+
+
+def mapcat(f, *colls):
+    for coll in map(f, *colls):
+        for e in coll:
+            yield e
+
+
+def zipmap(keys, vals):
+    return dict(zip(keys, vals))
+
+
+def vec(coll):
+    return list(coll)
+
+
+def some(pred, coll):
+    for e in coll:
+        if pred(e) is not None:
+            return e
+
+
+def complement(f):
+    return tzf.complement(f)

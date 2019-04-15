@@ -72,7 +72,7 @@ def _q(context, clauses):
 
 
 def _collect2(context, symbols):
-    rels = context.rels
+    rels = context.rels if context is not None else None
     # Temporarily using a plain list for acc instead of custom tonsky's array
     array = []
     return _collect3([array], rels, symbols)
@@ -102,6 +102,7 @@ def _collect3(acc, rels, symbols):
 
 def collect(context, symbols):
     return tzf.thread_last(_collect2(context, symbols),
+                           clj.liberal_iter,
                            (map, clj.vec),
                            clj.set_)
 
@@ -172,11 +173,11 @@ def memoized_parse_query(q):
 def q(q, *inputs):
     parsed_q = memoized_parse_query(q)
     find = parsed_q.qfind
-    find_elements = dp.find_elements(find)
+    find_elements = find.find_elements()
     find_vars = dp.find_vars(find)
     result_arity = clj.count(find_elements)
     with_ = parsed_q.qwith
-    all_vars = clj.concat(find_vars, map(dp.Variable.symbol, with_))
+    all_vars = clj.concat(find_vars, clj.mapv(dp.Variable.symbol, with_))
     q0 = q
     if clj.is_sequential(q):
         q = dp.query2map(q)
@@ -188,7 +189,7 @@ def q(q, *inputs):
                                  (collect, all_vars))
 
     result = resultset
-    if q['with'] is not None:
+    if 'with' in q:
         result = [clj.subvec(e, 0, result_arity) for e in result]
     if clj.some(dp.is_aggregate, find_elements):
         result = aggregate(find_elements, context, result)
