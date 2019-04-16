@@ -21,7 +21,7 @@ def is_seqable(x):
     return clj.is_seq(x)
 
 
-class Datom(collections.namedtuple('Datom', 'e a v tx hash_')):
+class Datom(collections.namedtuple('Datom', 'e a v tx added')):
     def datom_tx(self):
         if clj.is_pos(self.tx):
             return self.tx
