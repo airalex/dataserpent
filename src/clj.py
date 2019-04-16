@@ -219,3 +219,7 @@ def some(pred, coll):
 
 def complement(f):
     return tzf.complement(f)
+
+
+def is_pos(num):
+    return num > 0

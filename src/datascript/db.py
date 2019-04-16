@@ -80,6 +80,18 @@ def cmp_datoms_avet(d1, d2):
         clj.integer_compare(d1.datom_tx(), d2.datom_tx()))
 
 
+def datom_cmp_eavt(datom):
+    return [datom.e, datom.a, datom.v, datom.datom_tx()]
+
+
+def datom_cmp_aevt(datom):
+    return [datom.a, datom.e, datom.v, datom.datom_tx()]
+
+
+def datom_cmp_avet(datom):
+    return [datom.a, datom.v, datom.e, datom.datom_tx()]
+
+
 def attr2properties(k, v):
     if v == 'db.unique/identity':
         return ['db/unique', 'db.unique/identity', 'db/index']
@@ -148,11 +160,31 @@ def empty_db(schema=None):
     _validate_schema(schema)
     return DB(schema=schema,
               rschema=_rschema(clj.merge(IMPLICIT_SCHEMA, schema)),
-              eavt=sc.SortedSet(key=cmp_datoms_eavt),
-              aevt=sc.SortedSet(key=cmp_datoms_aevt),
-              avet=sc.SortedSet(key=cmp_datoms_avet),
+              eavt=sc.SortedSet(key=datom_cmp_eavt),
+              aevt=sc.SortedSet(key=datom_cmp_aevt),
+              avet=sc.SortedSet(key=datom_cmp_avet),
               max_eid=E0,
               max_tx=TX0,
+              hash_=clj.atom(0))
+
+
+def init_db(datoms, schema=None):
+    _validate_schema(schema)
+    rschema = _rschema(clj.merge(IMPLICIT_SCHEMA, schema))
+    indexed = rschema['db/index']
+    eavt = sc.SortedSet(datoms, datom_cmp_eavt)
+    aevt = sc.SortedSet(datoms, datom_cmp_aevt)
+    avet_datoms = list(filter(lambda d: d.a in indexed, datoms))
+    avet = sc.SortedSet(avet_datoms, datom_cmp_avet)
+    max_eid = 100  # TODO init_max_eid(eavt)
+    max_tx = 1000*1000  # TODO
+    return DB(schema=schema,
+              rschema=rschema,
+              eavt=eavt,
+              aevt=aevt,
+              avet=avet,
+              max_eid=max_eid,
+              max_tx=max_tx,
               hash_=clj.atom(0))
 
 
