@@ -21,4 +21,16 @@ def test_joins():
                       ddb.Datom(2, clj.K('name'), 'Alex', 1, True)])
     form = clj.str2edn('[:find ?e :where [?e :name]]')
     result = dq.q(form, db)
-    raise "a"
+    # raise "a"
+
+
+class TestLooksLike:
+    def test_is_symbol_star(self):
+        clause = [[clj.S('?e'), clj.K('name')]]
+        res = dq.looks_like([dq.is_source, clj.S('*')], clause)
+        assert res is False
+
+    def test_star(self):
+        clause = [clj.S('*')]
+        res = dq.looks_like([clj.S('_')], clause)
+        assert res is True

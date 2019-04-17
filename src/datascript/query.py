@@ -30,8 +30,10 @@ def looks_like(pattern, form):
         if clj.last(pattern) == clj.S('*'):
             if not clj.is_sequential(form):
                 return False
-            return clj.is_every(lambda pattern_el_form_el: looks_like(*pattern_el_form_el),
-                                clj.mapv(clj.vector, clj.butlast(pattern), form))
+            def _pred(pattern_form):
+                pattern_el, form_el = pattern_form
+                return looks_like(pattern_el, form_el)
+            return clj.is_every(_pred, clj.mapv(clj.vector, clj.butlast(pattern), form))
         else:
             if not clj.is_sequential(form):
                 return False
@@ -44,7 +46,7 @@ def looks_like(pattern, form):
 
 
 def is_source(sym):
-    return clj.is_symbol(sym) and clj.S('$') == clj.first(sym.name)
+    return clj.is_symbol(sym) and '$' == clj.first(sym.name)
 
 def is_rule(context, clause):
     if clj.is_sequential(clause):
@@ -124,27 +126,27 @@ def _resolve_clause(context, clause, orig_clause=None):
 
     if looks_like([[clj.is_symbol, clj.S('*')]], clause):
         return filter_by_pred(context, clause)
-    elif looks_like([[clj.is_symbol, clj.S('*')], clj.S('_')]):
+    elif looks_like([[clj.is_symbol, clj.S('*')], clj.S('_')], clause):
         return bind_by_fn(context, clause)
-    elif looks_like([is_source, clj.S('*')]):
+    elif looks_like([is_source, clj.S('*')], clause):
         source_sym, rest = clj.extract_seq(clause, 1)
-        push_implicit_source(clj.get(context.source, source_sym))
+        push_implicit_source(clj.get(context.sources, source_sym))
         result = _resolve_clause(context, rest, clause)
         pop_implicit_source()
         return result
-    elif looks_like([clj.S('or'), clj.S('*')]):
+    elif looks_like([clj.S('or'), clj.S('*')], clause):
         _, branches = clj.extract_seq(clause, 1)
         contexts = clj.mapv(lambda b: resolve_clause(context, b), branches)
         rels = clj.mapv(lambda c: clj.reduce2(hash_join, c.rels), contexts)
         return clj.first(contexts)._replace(rels=[clj.reduce2(sum_rel, rels)])
-    elif looks_like([clj.S('or-join'), [[clj.S('*')], clj.S('*')], clj.S('*')]):
+    elif looks_like([clj.S('or-join'), [[clj.S('*')], clj.S('*')], clj.S('*')], clause):
         _, req_vars_vars, branches = clj.extract_seq(clause, 2)
         req_vars, vars_ = clj.extract_seq(req_vars_vars, 1)
         check_bound(context, req_vars, orig_clause)
         return _resolve_clause(context,
                                clj.list_star(clj.S('or-join'), clj.concat(req_vars, vars_), branches),
                                              clause)
-    elif looks_like([clj.S('or-join'), [clj.S('*')], clj.S('*')]):
+    elif looks_like([clj.S('or-join'), [clj.S('*')], clj.S('*')], clause):
         _, vars_, branches = clj.extract_seq(clause, 2)
         vars_ = clj.set_(vars_)
         join_context = limit_context(context, vars)
@@ -154,10 +156,10 @@ def _resolve_clause(context, clause, orig_clause=None):
         rels = clj.mapv(lambda c: clj.reduce2(hash_join, c.rels), contexts)
         sum_rel = clj.reduce2(sum_rel, rels)
         return context._replace(rels=collapse_rels(context.rels, sum_rel))
-    elif looks_like([clj.S('and'), clj.S('*')]):
+    elif looks_like([clj.S('and'), clj.S('*')], clause):
         _, clauses = clj.extract_seq(clause, 1)
         return clj.reduce(resolve_clause, context, clauses)
-    elif looks_like([clj.S('not'), clj.S('*')]):
+    elif looks_like([clj.S('not'), clj.S('*')], clause):
         _, clauses = clj.extract_seq(clause, 1)
         bound_vars = clj.set_(clj.mapcat(lambda c: list(c.attrs.keys()), context.rels))
         negation_vars = collect_vars(clauses)
@@ -168,7 +170,7 @@ def _resolve_clause(context, clause, orig_clause=None):
         negation = substract_rel(single(context1.rels),
                                  clj.reduce2(hash_join, negation_context.rels))
         return context1._replace(rels=[negation])
-    elif looks_like([clj.S('not-join'), [clj.S('*')], clj.S('*')]):
+    elif looks_like([clj.S('not-join'), [clj.S('*')], clj.S('*')], clause):
         _, vars_, clauses = clj.extract_seq(clause, 2)
         check_bound(context, vars_, orig_clause)
         context1 = context._replace(rels=[clj.reduce2(hash_join, context.rels)])
@@ -178,7 +180,7 @@ def _resolve_clause(context, clause, orig_clause=None):
         negation = substract_rel(single(context1.rels),
                                  clj.reduce2(hash_join(negation_context.rels)))
         return context1._replace(rels=[negation])
-    elif looks_like([clj.S('*')]):
+    elif looks_like([clj.S('*')], clause):
         source = current_implicit_source()
         pattern = resolve_pattern_lookup_refs(source, clause)
         relation = lookup_pattern(source, pattern)

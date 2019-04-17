@@ -92,11 +92,6 @@ def is_distinct(seq):
     return tzi.isdistinct(seq)
 
 
-def mapv(f, *colls):
-    assert len(colls) == 1, 'mapv is temporarily defined only for single coll'
-    return list(map(f, colls[0]))
-
-
 def some_fn(*fns):
     assert len(fns) == 2, 'some_fn is temporarily defined only for two fns'
 
@@ -138,6 +133,10 @@ def first(seq):
     return get(seq, 0)
 
 
+def last(seq):
+    return get(seq, -1)
+
+
 def reduce(f, val, coll):
     # note the argument ordering
     return functools.reduce(f, liberal_iter(coll), val)
@@ -156,6 +155,7 @@ def concat(*seqs):
                            tzc.map(lambda s: s or []),
                            tzi.concat,
                            list)
+
 
 def set_(seq):
     return set(seq or [])
@@ -217,9 +217,24 @@ def some(pred, coll):
             return e
 
 
+def is_every(pred, coll):
+    for e in coll:
+        if not pred(e):
+            return False
+    return True
+
+
 def complement(f):
     return tzf.complement(f)
 
 
 def is_pos(num):
     return num > 0
+
+
+def vector(*args):
+    return list(args)
+
+
+def butlast(coll):
+    return coll[:-1]
