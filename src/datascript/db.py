@@ -1,6 +1,8 @@
 import collections
+import abc
 
 import toolz.dicttoolz as tzd
+import toolz.functoolz as tzf
 import sortedcontainers as sc
 
 import src.clj as clj
@@ -29,7 +31,85 @@ class Datom(collections.namedtuple('Datom', 'e a v tx added')):
             return -self.tx
 
 
-DB = collections.namedtuple('DB', 'schema eavt aevt avet max_eid max_tx rschema hash_')
+class ISearch(abc.ABC):
+    @abc.abstractmethod
+    def search(self, pattern):
+        pass
+
+
+# Uncomment when needs to be used
+# class IIndexAccesss(abc.ABC):
+#     @abc.abstractmethod
+#     def datoms(self, index, components):
+#         pass
+
+#     @abc.abstractmethod
+#     def seek_datoms(self, index, components):
+#         pass
+
+#     @abc.abstractmethod
+#     def rseek_datoms(self, index, components):
+#         pass
+
+#     @abc.abstractmethod
+#     def index_range(self, attr, start, end):
+#         pass
+
+
+class IDB(abc.ABC):
+    @abc.abstractmethod
+    def schema(self):
+        pass
+
+    @abc.abstractmethod
+    def attrs_by(self, property_):
+        pass
+
+
+class DB(collections.namedtuple('DB', 'schema_ eavt aevt avet max_eid max_tx rschema hash_'),
+         IDB, ISearch):
+    def schema(self):
+        return self.schema_
+
+    def attrs_by(self, property_):
+        return self.rschema(property_)
+
+    def search(self, pattern):
+        e, a, v, tx, _ = clj.extract_seq(pattern, 4)
+        eavt = self.eavt
+        aevt = self.aevt
+        avet = self.avet
+        # Very naive implementation for now.
+        # Datascript uses `case-tree` here for searching indices.
+        if e is not None:
+            if a is not None:
+                if v is not None:
+                    if tx is not None:
+                        pass
+                    else:
+                        pass
+                else:
+                    pass
+            else:
+                pass
+        else:
+            if a is not None:
+                if v is not None:
+                    if tx is not None:
+                        pass
+                    else:
+                        pass
+                else:
+                    if tx is not None:
+                        pass
+                    else:
+                        # TODO: fix *** TypeError: '>' not supported between instances of 'Keyword' and 'Keyword'
+                        # return filter(tzf.curry(cmp_datoms_aevt,
+                        #                         Datom(e=None, a=a, v=None, tx=None, added=None)),
+                        #               aevt)
+                        return [d for d in aevt if d.a == a]
+
+
 FilteredDB = collections.namedtuple('FilteredDB', 'unfiltered_db pred hash_')
 TxReport = collections.namedtuple('TxReport', 'db_before db_after tx_data tempids tx_meta')
 
@@ -178,7 +258,7 @@ def init_db(datoms, schema=None):
     avet = sc.SortedSet(avet_datoms, datom_cmp_avet)
     max_eid = 100  # TODO init_max_eid(eavt)
     max_tx = 1000*1000  # TODO
-    return DB(schema=schema,
+    return DB(schema_=schema,
               rschema=rschema,
               eavt=eavt,
               aevt=aevt,

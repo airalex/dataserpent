@@ -8,6 +8,8 @@ import toolz.itertoolz as tzi
 
 import src.clj as clj
 import src.datascript.parser as dp
+import src.datascript.db as ddb
+import src.datascript.arrays as da
 
 
 def parse_rules(rules):
@@ -15,9 +17,9 @@ def parse_rules(rules):
     return tzi.groupby(clj.ffirst, rules)
 
 
-
-
 Context = collections.namedtuple('Context', 'rels sources rules')
+Relation = collections.namedtuple('Relation', 'attrs tuples')
+
 
 def looks_like(pattern, form):
     if clj.S('_') == pattern:
@@ -44,9 +46,19 @@ def looks_like(pattern, form):
     else:
         return pattern(form)
 
-
 def is_source(sym):
     return clj.is_symbol(sym) and '$' == clj.first(sym.name)
+
+def is_free_var(sym):
+    return (clj.is_symbol(sym) and
+            '?' == sym.name[0])
+
+def is_attr(form):
+    return clj.is_keyword(form) or clj.is_string(form)
+
+def is_lookup_ref(form):
+    return looks_like([is_attr, clj.S('_')], form)
+
 
 def is_rule(context, clause):
     if clj.is_sequential(clause):
@@ -63,6 +75,32 @@ def is_rule(context, clause):
 # TODO: fill
 built_in_aggregates = {}
 
+def lookup_pattern_db(db, pattern):
+    search_pattern = clj.mapv(lambda s: None if clj.is_symbol(s) else s, pattern)
+    datoms = db.search(search_pattern)
+    attr2prop = tzf.thread_last(clj.mapv(clj.vector, pattern, ['e', 'a', 'v', 'tx']),
+                                (filter, lambda s__: is_free_var(s__[0])),
+                                dict)
+    return Relation(attr2prop, datoms)
+
+def lookup_pattern(source, pattern):
+    if clj.satisfies(ddb.ISearch, source):
+        return lookup_pattern_db(source, pattern)
+    else:
+        return lookup_pattern_coll(source, pattern)
+
+def collapse_rels(rels, new_rel):
+    def _loop(rels, new_rel, acc):
+        rel = clj.first(rels)
+        if rel is not None:
+            if clj.not_empty(intersect_keys(new_rel.attrs, rel.attrs)):
+                return _loop(clj.next_(rels), hash_join(rel, new_rel), acc)
+            else:
+                return _loop(clj.next_(rels), new_rel, clj.conj(acc, rel))
+        else:
+            return clj.conj(acc, new_rel)
+
+    return _loop(rels, new_rel, [])
 
 def resolve_in(context, binding_value):
     binding, value = binding_value
@@ -109,6 +147,7 @@ def _context_resolve_val(context, sym):
             return clj.get(tuple_, clj.get(sym, rel.attrs))
 
 # temporarily not thread-safe
+# TODO: implement a generic, thread-safe (binding) implementation
 implicit_source_stack = []
 
 def current_implicit_source():
@@ -119,6 +158,55 @@ def push_implicit_source(new_source):
 
 def pop_implicit_source():
     return implicit_source_stack.pop()
+
+
+lookup_attrs_stack = []
+
+def current_lookup_attrs():
+    return clj.get(lookup_attrs_stack, -1)
+
+def push_lookup_attrs(new_val):
+    lookup_attrs_stack.append(new_val)
+
+def pop_lookup_attrs():
+    return lookup_attrs_stack.pop()
+
+
+def resolve_pattern_lookup_refs(source, pattern):
+    if clj.satisfies(ddb.IDB, source):
+        e, a, v, tx, _ = clj.extract_seq(pattern, 4)
+        if is_lookup_ref(e) or is_attr(e):
+            elem0 = ddb.entid_strict(source, e)
+        else:
+            elem0 = e
+        elem1 = a
+        if (v and
+            is_attr(a) and
+            ddb.is_ref(source, a) and
+            (is_lookup_ref(v) or is_attr(v))):
+            elem2 = ddb.entid_strict(source, v)
+        else:
+            elem2 = v
+        if is_lookup_ref(tx):
+            elem3 = ddb.entid_strict(source, tx)
+        else:
+            elem3 = tx
+        return [elem0, elem1, elem2, elem3][0:clj.count(pattern)]
+    else:
+        return pattern
+
+def dynamic_lookup_attrs(source, pattern):
+    e, a, v, tx, _ = clj.extract_seq(pattern, 4)
+    threaded = set()
+    if is_free_var(e):
+        threaded = clj.conj(threaded, e)
+    if is_free_var(tx):
+        threaded = clj.conj(threaded, tx)
+    if (is_free_var(v) and
+        not is_free_var(a) and
+        ddb.is_ref(source, a)):
+        threaded = clj.conj(threaded, v)
+    return threaded
 
 def _resolve_clause(context, clause, orig_clause=None):
     if orig_clause is None:
@@ -184,7 +272,7 @@ def _resolve_clause(context, clause, orig_clause=None):
         source = current_implicit_source()
         pattern = resolve_pattern_lookup_refs(source, clause)
         relation = lookup_pattern(source, pattern)
-        if clj.satisfies(db.IDB, source):
+        if clj.satisfies(ddb.IDB, source):
             push_lookup_attrs(dynamic_lookup_attrs(source, pattern))
         else:
             push_lookup_attrs(current_lookup_attrs())
@@ -217,32 +305,33 @@ def _q(context, clauses):
 
 
 def _collect2(context, symbols):
-    rels = context.rels if context is not None else None
-    # Temporarily using a plain list for acc instead of custom tonsky's array
-    array = []
+    rels = context.rels
+    array = da.make_array(clj.count(symbols))
     return _collect3([array], rels, symbols)
 
 
 def _collect3(acc, rels, symbols):
-    if clj.first(rels) is not None:
-        rel = clj.first(rels)
+    rel = clj.first(rels)
+    if rel is not None:
         keep_attrs = clj.select_keys(rel.attrs, symbols)
         if clj.is_empty(keep_attrs):
             return _collect3(acc, clj.next_(rels), symbols)
         else:
-            copy_map = list(map(lambda s: clj.get(keep_attrs, s), symbols))
+            copy_map = clj.to_array(map(lambda s: clj.get(keep_attrs, s), symbols))
             len_ = clj.count(symbols)
 
             results = []
             for t1 in acc:
                 for t2 in rel.tuples:
-                    res = list(t1)
-                    for i in len_:
-                        if clj.get(copy_map, i) is not None:
-                            idx = clj.get(copy_map, i)
-                            res[i] = clj.get(t2, idx)
+                    res = clj.aclone(t1)
+                    for i in range(len_):
+                        idx = clj.aget(copy_map, i)
+                        if idx is not None:
+                            clj.aset(res, i, clj.get(t2, idx))
                     results.append(res)
             return _collect3(results, clj.next_(rels), symbols)
+    else:
+        return acc
 
 
 def collect(context, symbols):
@@ -302,11 +391,13 @@ def aggregate(find_elements, context, resultset):
     group_idxs = _idxs_of(clj.complement(dp.is_aggregate), find_elements)
 
     def group_fn(tuple_):
-        return map(lambda idx: tuple_[idx], group_idxs)
+        return tzf.thread_last(group_idxs,
+                               (map, lambda idx: tuple_[idx]),
+                               tuple)
 
     grouped = tzi.groupby(group_fn, resultset)
     return [
-        _aggregate(find_elements, context, tuples) for _, tuples in grouped
+        _aggregate(find_elements, context, tuples) for _, tuples in grouped.items()
     ]
 
 
@@ -333,13 +424,12 @@ def q(q, *inputs):
                                  (_q, wheres),
                                  (collect, all_vars))
 
-    result = resultset
+    threaded = resultset
     if 'with' in q:
-        result = [clj.subvec(e, 0, result_arity) for e in result]
+        threaded = [clj.subvec(e, 0, threaded_arity) for e in threaded]
     if clj.some(dp.is_aggregate, find_elements):
-        result = aggregate(find_elements, context, result)
-    # TODO
-    # if clj.some(dp.is_pull, find_elements):
-    #     result = pull(find_elements, context, result)
-    # result = _post_process(find, result)
-    return result
+        threaded = aggregate(find_elements, context, threaded)
+    if clj.some(dp.is_pull, find_elements):
+        threaded = pull(find_elements, context, threaded)
+    threaded = find.post_process(threaded)
+    return threaded

@@ -359,20 +359,32 @@ class FindRel(collections.namedtuple('FindRel', ['elements']), clj.MetaMixin):
     def find_elements(self):
         return self.elements
 
+    def post_process(self, tuples):
+        return tuples
+
 
 class FindColl(collections.namedtuple('FindColl', ['element']), clj.MetaMixin):
     def find_elements(self):
         return [self.element]
+
+    def post_process(self, tuples):
+        return clj.mapv(clj.first, tuples)
 
 
 class FindScalar(collections.namedtuple('FindScalar', ['element']), clj.MetaMixin):
     def find_elements(self):
         return [self.element]
 
+    def post_process(self, tuples):
+        return clj.ffirst(tuples)
+
 
 class FindTuple(collections.namedtuple('FindTuple', ['element']), clj.MetaMixin):
     def find_elements(self):
         return self.elements
+
+    def post_process(self, tuples):
+        return clj.first(tuples)
 
 
 def find_vars(find):
@@ -381,6 +393,10 @@ def find_vars(find):
 
 def is_aggregate(element):
     return clj.is_instance(Aggregate, element)
+
+
+def is_pull(element):
+    return clj.is_instance(Pull, element)
 
 
 def parse_aggregate(form):

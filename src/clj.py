@@ -70,7 +70,13 @@ def next_(seq):
 
 
 def get(seq, ind, default=None):
-    return tzi.get(ind, seq, default)
+    e = tzi.get(ind, seq, default)
+    if e == default:
+        try:
+            return getattr(seq, ind)
+        except (AttributeError, TypeError):
+            pass
+    return e
 
 
 def into(to, from_):
@@ -207,13 +213,10 @@ def zipmap(keys, vals):
     return dict(zip(keys, vals))
 
 
-def vec(coll):
-    return list(coll)
-
-
 def some(pred, coll):
     for e in coll:
-        if pred(e) is not None:
+        val = pred(e)
+        if val is not None and val is not False:
             return e
 
 
@@ -232,9 +235,42 @@ def is_pos(num):
     return num > 0
 
 
+def vec(coll):
+    return tuple(coll)
+
+
 def vector(*args):
-    return list(args)
+    return vec(args)
 
 
 def butlast(coll):
     return coll[:-1]
+
+
+def is_string(x):
+    return is_instance(str, x)
+
+
+def compare(a, b):
+    return (a > b) - (a < b)
+
+
+def select_keys(m, keyseq):
+    return {k: m[k] for k in keyseq}
+
+
+def to_array(coll):
+    return list(coll)
+
+
+def aclone(array):
+    return list(array)
+
+
+def aget(array, idx):
+    return array[idx]
+
+
+def aset(array, idx, val):
+    array[idx] = val
+    return val
