@@ -88,7 +88,7 @@ class DB(collections.namedtuple('DB', 'schema_ eavt aevt avet max_eid max_tx rsc
         if tx is not None:
             filters.append(tzc.filter(lambda d: d.tx == tx))
 
-        datoms = tzf.thread_last(self.eavt, *filters)
+        datoms = list(tzf.thread_last(self.eavt, *filters))
         return datoms
 
         # eavt = self.eavt
@@ -250,23 +250,22 @@ def _validate_schema(schema):
 
 
 def empty_db(schema=None):
-    """Creates an empty database with an optional schema.
-    Usage:
-
-    ```
-    (empty-db) ; => #datascript/DB {:schema {}, :datoms []}
-
-    (empty-db {:likes {:db/cardinality :db.cardinality/many}})
-    ; => #datascript/DB {:schema {:likes {:db/cardinality :db.cardinality/many}}
-    ;                    :datoms []}
-    ```"""
+    """Creates an empty database with an optional schema."""
     assert clj.is_nil(schema) or clj.is_map(schema)
     _validate_schema(schema)
+    # return DB(schema=schema,
+    #           rschema=_rschema(clj.merge(IMPLICIT_SCHEMA, schema)),
+    #           eavt=sc.SortedSet(key=datom_cmp_eavt),
+    #           aevt=sc.SortedSet(key=datom_cmp_aevt),
+    #           avet=sc.SortedSet(key=datom_cmp_avet),
+    #           max_eid=E0,
+    #           max_tx=TX0,
+    #           hash_=clj.atom(0))
     return DB(schema=schema,
               rschema=_rschema(clj.merge(IMPLICIT_SCHEMA, schema)),
-              eavt=sc.SortedSet(key=datom_cmp_eavt),
-              aevt=sc.SortedSet(key=datom_cmp_aevt),
-              avet=sc.SortedSet(key=datom_cmp_avet),
+              eavt=[],
+              aevt=[],
+              avet=[],
               max_eid=E0,
               max_tx=TX0,
               hash_=clj.atom(0))
@@ -275,18 +274,26 @@ def empty_db(schema=None):
 def init_db(datoms, schema=None):
     _validate_schema(schema)
     rschema = _rschema(clj.merge(IMPLICIT_SCHEMA, schema))
-    indexed = rschema['db/index']
-    eavt = sc.SortedSet(datoms, datom_cmp_eavt)
-    aevt = sc.SortedSet(datoms, datom_cmp_aevt)
-    avet_datoms = list(filter(lambda d: d.a in indexed, datoms))
-    avet = sc.SortedSet(avet_datoms, datom_cmp_avet)
+    # indexed = rschema['db/index']
+    # eavt = sc.SortedSet(datoms, datom_cmp_eavt)
+    # aevt = sc.SortedSet(datoms, datom_cmp_aevt)
+    # avet_datoms = list(filter(lambda d: d.a in indexed, datoms))
+    # avet = sc.SortedSet(avet_datoms, datom_cmp_avet)
     max_eid = 100  # TODO init_max_eid(eavt)
     max_tx = 1000*1000  # TODO
+    # return DB(schema_=schema,
+    #           rschema=rschema,
+    #           eavt=eavt,
+    #           aevt=aevt,
+    #           avet=avet,
+    #           max_eid=max_eid,
+    #           max_tx=max_tx,
+    #           hash_=clj.atom(0))
     return DB(schema_=schema,
               rschema=rschema,
-              eavt=eavt,
-              aevt=aevt,
-              avet=avet,
+              eavt=list(datoms),
+              aevt=list(datoms),
+              avet=list(datoms),
               max_eid=max_eid,
               max_tx=max_tx,
               hash_=clj.atom(0))

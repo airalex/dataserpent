@@ -2,6 +2,8 @@ import collections.abc
 import typing as t
 import copy
 import functools
+import itertools
+import numbers
 
 import edn_format as edn
 import toolz.itertoolz as tzi
@@ -78,6 +80,11 @@ def get(seq, ind, default=None):
         except (AttributeError, TypeError):
             pass
     return e
+
+
+def assoc_bang(coll, key, val):
+    coll[key] = val
+    return coll
 
 
 def into(to, from_):
@@ -282,3 +289,23 @@ def contains(coll, key):
         return False
 
     return key in coll
+
+
+def range_():
+    return itertools.count()
+
+
+def transient(obj):
+    return copy.copy(obj)
+
+
+def persistent_bang(obj):
+    return copy.copy(obj)
+
+
+def is_number(x):
+    return is_instance(numbers.Number, x)
+
+
+def alength(a):
+    return len(a)

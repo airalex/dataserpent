@@ -21,6 +21,12 @@ Context = collections.namedtuple('Context', 'rels sources rules')
 Relation = collections.namedtuple('Relation', 'attrs tuples')
 
 
+def intersect_keys(attrs1, attrs2):
+    set1 = set(attrs1.keys())
+    set2 = set(attrs2.keys())
+    return set1.intersection(set2)
+
+
 def looks_like(pattern, form):
     if clj.S('_') == pattern:
         return True
@@ -59,6 +65,16 @@ def is_attr(form):
 def is_lookup_ref(form):
     return looks_like([is_attr, clj.S('_')], form)
 
+def join_tuples(t1, idxs1, t2, idxs2):
+    l1 = clj.alength(idxs1)
+    l2 = clj.alength(idxs2)
+    res = da.make_array(l1 + l2)
+    for i in range(l1):
+        clj.aset(res, i, clj.get(t1, clj.aget(idxs1, i)))
+    for i in range(l2):
+        clj.aset(res, (l1 + i), clj.get(t2, clj.aget(idxs2, i)))
+    return res
+
 
 def is_rule(context, clause):
     if clj.is_sequential(clause):
@@ -74,6 +90,81 @@ def is_rule(context, clause):
 
 # TODO: fill
 built_in_aggregates = {}
+
+def getter_fn(attrs, attr):
+    idx = clj.get(attrs, attr)
+    if clj.contains(current_lookup_attrs(), attr):
+        def _getter1(tuple_):
+            eid = clj.get(tuple_, idx)
+            if clj.is_number(eid):
+                return eid
+            elif clj.is_sequential(eid):
+                return ddb.entid(current_implicit_source(), eid)
+            elif da.is_array(eid):
+                return ddb.entid(current_implicit_source(), eid)
+            else:
+                return eid
+        return _getter1
+    else:
+        def _getter2(tuple_):
+            return clj.get(tuple_, idx)
+        return _getter2
+
+def tuple_key_fn(getters):
+    if clj.count(getters) == 1:
+        return clj.first(getters)
+    else:
+        getters = clj.to_array(getters)
+        def _fn(tuple_):
+            return da.into_array(map(lambda g: g(tuple_), getters))
+        return _fn
+
+def hash_attrs(key_fn, tuples):
+    def _loop(tuples, hash_table):
+        tuple_ = clj.first(tuples)
+        if tuple_ is not None:
+            key = key_fn(tuple_)
+            return _loop(clj.next_(tuples),
+                         clj.assoc_bang(hash_table, key,
+                                        clj.conj(clj.get(hash_table, key, []), tuple_)))
+        else:
+            return clj.persistent_bang(hash_table)
+
+    return _loop(tuples, clj.transient({}))
+
+def hash_join(rel1, rel2):
+    tuples1 = rel1.tuples
+    tuples2 = rel2.tuples
+    attrs1 = rel1.attrs
+    attrs2 = rel2.attrs
+    common_attrs = clj.vec(intersect_keys(attrs1, attrs2))
+    common_gtrs1 = clj.mapv(lambda a: getter_fn(attrs1, a), common_attrs)
+    common_gtrs2 = clj.mapv(lambda a: getter_fn(attrs2, a), common_attrs)
+    keep_attrs1 = attrs1.keys()
+    keep_attrs2 = clj.vec(set(attrs2.keys()).difference(set(attrs1.keys())))
+    keep_idxs1 = clj.to_array(map(lambda a: clj.get(attrs1, a), keep_attrs1))
+    keep_idxs2 = clj.to_array(map(lambda a: clj.get(attrs2, a), keep_attrs2))
+    key_fn1 = tuple_key_fn(common_gtrs1)
+    hash_ = hash_attrs(key_fn1, tuples1)
+    key_fn2 = tuple_key_fn(common_gtrs2)
+
+    def _reducer1(acc, tuple2):
+        key = key_fn2(tuple2)
+        tuples1 = clj.get(hash_, key)
+        if tuples1 is not None:
+            def _reducer2(acc, tuple1):
+                return clj.conj(acc, join_tuples(tuple1,
+                                                 keep_idxs1,
+                                                 tuple2,
+                                                 keep_idxs2))
+            return clj.reduce(_reducer2, acc, tuples1)
+        else:
+            return acc
+
+    new_tuples = list(clj.reduce(_reducer1, [], tuples2))
+    return Relation(clj.zipmap(clj.concat(keep_attrs1, keep_attrs2),
+                               clj.range_()),
+                    new_tuples)
 
 def lookup_pattern_db(db, pattern):
     search_pattern = clj.mapv(lambda s: None if clj.is_symbol(s) else s, pattern)

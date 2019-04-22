@@ -40,6 +40,18 @@ class TestQuerying():
         result = dq.q(form, db)
         assert {(2,)} == result
 
+    def test_v_joined_by_e(self):
+        db = ddb.init_db([ddb.Datom(1, clj.K('name'), 'Asia', 1, True),
+                          ddb.Datom(2, clj.K('name'), 'Alex', 1, True),
+                          ddb.Datom(2, clj.K('friend'), 1, 1, True)])
+        form = clj.str2edn('''
+        [:find ?f
+         :where [?e :name "Alex"]
+                [?e :friend ?f]]
+        ''')
+        result = dq.q(form, db)
+        assert {(1,)} == result
+
 
 class TestLooksLike:
     def test_is_symbol_star(self):
