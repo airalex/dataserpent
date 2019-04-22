@@ -3,6 +3,7 @@ import abc
 
 import toolz.dicttoolz as tzd
 import toolz.functoolz as tzf
+import toolz.curried as tzc
 import sortedcontainers as sc
 
 import src.clj as clj
@@ -72,46 +73,69 @@ class DB(collections.namedtuple('DB', 'schema_ eavt aevt avet max_eid max_tx rsc
         return self.schema_
 
     def attrs_by(self, property_):
-        return self.rschema(property_)
+        return clj.get(self.rschema, property_)
 
     def search(self, pattern):
         e, a, v, tx, _ = clj.extract_seq(pattern, 4)
-        eavt = self.eavt
-        aevt = self.aevt
-        avet = self.avet
+
+        filters = []
+        if e is not None:
+            filters.append(tzc.filter(lambda d: d.e == e))
+        if a is not None:
+            filters.append(tzc.filter(lambda d: d.a == a))
+        if v is not None:
+            filters.append(tzc.filter(lambda d: d.v == v))
+        if tx is not None:
+            filters.append(tzc.filter(lambda d: d.tx == tx))
+
+        datoms = tzf.thread_last(self.eavt, *filters)
+        return datoms
+
+        # eavt = self.eavt
+        # aevt = self.aevt
+        # avet = self.avet
         # Very naive implementation for now.
         # Datascript uses `case-tree` here for searching indices.
-        if e is not None:
-            if a is not None:
-                if v is not None:
-                    if tx is not None:
-                        pass
-                    else:
-                        pass
-                else:
-                    pass
-            else:
-                pass
-        else:
-            if a is not None:
-                if v is not None:
-                    if tx is not None:
-                        pass
-                    else:
-                        pass
-                else:
-                    if tx is not None:
-                        pass
-                    else:
-                        # TODO: fix *** TypeError: '>' not supported between instances of 'Keyword' and 'Keyword'
-                        # return filter(tzf.curry(cmp_datoms_aevt,
-                        #                         Datom(e=None, a=a, v=None, tx=None, added=None)),
-                        #               aevt)
-                        return [d for d in aevt if d.a == a]
+        #
+        # if e is not None:
+        #     if a is not None:
+        #         if v is not None:
+        #             if tx is not None:
+        #                 pass
+        #             else:
+        #                 pass
+        #         else:
+        #             pass
+        #     else:
+        #         pass
+        # else:
+        #     if a is not None:
+        #         if v is not None:
+        #             if tx is not None:
+        #                 pass
+        #             else:
+        #                 pass
+        #         else:
+        #             if tx is not None:
+        #                 pass
+        #             else:
+        #                 # TODO: fix *** TypeError: '>' not supported between instances of 'Keyword' and 'Keyword'
+        #                 # return filter(tzf.curry(cmp_datoms_aevt,
+        #                 #                         Datom(e=None, a=a, v=None, tx=None, added=None)),
+        #                 #               aevt)
+        #                 return [d for d in aevt if d.a == a]
 
 
 FilteredDB = collections.namedtuple('FilteredDB', 'unfiltered_db pred hash_')
 TxReport = collections.namedtuple('TxReport', 'db_before db_after tx_data tempids tx_meta')
+
+
+def is_attr(db, attr, property_):
+    return clj.contains(db.attrs_by(property_), attr)
+
+
+def is_ref(db, attr):
+    return is_attr(db, attr, 'db.type/ref')
 
 
 def combine_cmp(*comps):

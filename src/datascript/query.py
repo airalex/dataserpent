@@ -336,7 +336,7 @@ def _collect3(acc, rels, symbols):
 
 def collect(context, symbols):
     return tzf.thread_last(_collect2(context, symbols),
-                           clj.liberal_iter,
+                           clj.liberal_iter, # TODO: remove
                            (map, clj.vec),
                            clj.set_)
 

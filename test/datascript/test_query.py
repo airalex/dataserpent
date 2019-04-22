@@ -21,7 +21,24 @@ def test_joins():
                       ddb.Datom(2, clj.K('name'), 'Alex', 1, True)])
     form = clj.str2edn('[:find ?e :where [?e :name]]')
     result = dq.q(form, db)
-    assert {1, 2} == result
+    # assert {1, 2} == result
+    assert {(1,), (2,)} == result
+
+
+class TestQuerying():
+    def test_returning_v(self):
+        db = ddb.init_db([ddb.Datom(1, clj.K('name'), 'Asia', 1, True),
+                          ddb.Datom(2, clj.K('name'), 'Alex', 1, True)])
+        form = clj.str2edn('[:find ?n :where [_ :name ?n]]')
+        result = dq.q(form, db)
+        assert {('Asia',), ('Alex',)} == result
+
+    def test_e_contrained_to_v(self):
+        db = ddb.init_db([ddb.Datom(1, clj.K('name'), 'Asia', 1, True),
+                          ddb.Datom(2, clj.K('name'), 'Alex', 1, True)])
+        form = clj.str2edn('[:find ?e :where [?e :name "Alex"]]')
+        result = dq.q(form, db)
+        assert {(2,)} == result
 
 
 class TestLooksLike:

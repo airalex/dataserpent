@@ -42,7 +42,8 @@ def is_symbol(obj) -> bool:
 
 
 def is_sequential(obj) -> bool:
-    return isinstance(obj, collections.abc.Sequence)
+    return (not isinstance(obj, str)
+            and isinstance(obj, collections.abc.Sequence))
 
 
 def is_seq(obj):
@@ -274,3 +275,10 @@ def aget(array, idx):
 def aset(array, idx, val):
     array[idx] = val
     return val
+
+
+def contains(coll, key):
+    if coll is None:
+        return False
+
+    return key in coll
