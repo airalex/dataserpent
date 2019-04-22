@@ -88,6 +88,8 @@ def assoc_bang(coll, key, val):
 
 
 def into(to, from_):
+    if isinstance(to, t.Mapping):
+        return merge(to, dict(from_))
     return to + from_
 
 
@@ -309,3 +311,7 @@ def is_number(x):
 
 def alength(a):
     return len(a)
+
+
+def filter_(f, coll):
+    return filter(f, liberal_iter(coll))

@@ -174,6 +174,13 @@ def lookup_pattern_db(db, pattern):
                                 dict)
     return Relation(attr2prop, datoms)
 
+def lookup_pattern_coll(coll, pattern):
+    data = clj.filter_(lambda e: matches_pattern(pattern, e), coll)
+    attr2idx = tzf.thread_last(clj.mapv(clj.vector, pattern, clj.range_()),
+                               (filter, lambda s__: is_free_var(s__[0])),
+                               (clj.into, {}))
+    return Relation(attr2idx, clj.mapv(clj.to_array, data))
+
 def lookup_pattern(source, pattern):
     if clj.satisfies(ddb.ISearch, source):
         return lookup_pattern_db(source, pattern)

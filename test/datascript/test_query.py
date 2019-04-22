@@ -52,6 +52,27 @@ class TestQuerying():
         result = dq.q(form, db)
         assert {(1,)} == result
 
+    def test_v_of_join_joined_constrained(self):
+        db = ddb.init_db([ddb.Datom(1, clj.K('name'), 'Asia', 1, True),
+                          ddb.Datom(1, clj.K('gender'), 'f', 1, True),
+                          ddb.Datom(2, clj.K('name'), 'Alex', 1, True),
+                          ddb.Datom(2, clj.K('gender'), 'm', 1, True),
+                          ddb.Datom(3, clj.K('name'), 'Artur', 1, True),
+                          ddb.Datom(3, clj.K('gender'), 'm', 1, True),
+                          ddb.Datom(1, clj.K('friends'), 2, 1, True),
+                          ddb.Datom(2, clj.K('friends'), 1, 1, True),
+                          ddb.Datom(2, clj.K('friends'), 3, 1, True),
+                          ddb.Datom(3, clj.K('friends'), 2, 1, True),
+                          ddb.Datom(4, clj.K('name'), 'Jane', 1, True)])
+        assert {('Alex',), ('Artur',), ('Asia',)} == \
+            dq.q(clj.str2edn('''
+            [:find ?n
+             :where
+            [?e :gender "m"]
+            [?e :friends ?f]
+            [?f :name ?n]]
+            '''), db)
+
 
 class TestLooksLike:
     def test_is_symbol_star(self):
